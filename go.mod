@@ -1,5 +1,7 @@
 module src.goblgobl.com/utils
 
+replace src.goblgobl.com/tests => ../tests
+
 go 1.18
 
 require (

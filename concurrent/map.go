@@ -1,14 +1,14 @@
 package concurrent
 
+/*
+A concurrent-safe string => generic map
+*/
+
 import (
 	"sync"
 
 	"golang.org/x/sync/singleflight"
 )
-
-/*
-A concurrent-safe string => generic map
-*/
 
 type Loader[V any] func(id string) (V, error)
 

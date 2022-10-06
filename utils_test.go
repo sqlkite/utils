@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"testing"
 
 	"src.goblgobl.com/tests/assert"
@@ -23,4 +24,12 @@ func Test_EncodeRequestId(t *testing.T) {
 		seen[r1] = struct{}{}
 		seen[r2] = struct{}{}
 	}
+}
+
+func Test_B2S(t *testing.T) {
+	assert.Equal(t, B2S([]byte("")), "")
+	assert.Equal(t, B2S([]byte("abc")), "abc")
+
+	assert.True(t, bytes.Equal(S2B(""), []byte{}))
+	assert.True(t, bytes.Equal(S2B("129"), []byte("129")))
 }

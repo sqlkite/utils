@@ -1,10 +1,14 @@
 package sqlite
 
 import (
+	"errors"
+
 	driver "src.goblgobl.com/sqlite"
 	"src.goblgobl.com/utils"
 	"src.goblgobl.com/utils/log"
 )
+
+var ErrNoRows = errors.New("no rows in result set")
 
 type Conn struct {
 	driver.Conn
@@ -16,4 +20,18 @@ func New(filePath string, create bool) (Conn, error) {
 		return Conn{}, log.Err(utils.ERR_SQLITE_INIT, err).String("path", filePath)
 	}
 	return Conn{conn}, nil
+}
+
+func Scalar[T any](conn Conn, sql string, args ...any) (T, error) {
+	row := conn.Conn.Row(sql, args...)
+
+	var value T
+	exists, err := row.Scan(&value)
+	if err != nil {
+		return value, err
+	}
+	if !exists {
+		return value, utils.ErrNoRows
+	}
+	return value, err
 }

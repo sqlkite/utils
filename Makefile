@@ -3,7 +3,7 @@ F=
 # run tests
 .PHONY: t
 t:
-	@go test ./... -run "${F}" \
+	@go test -count=1 ./... -run "${F}" \
 		| grep -v "no tests to run" \
 		| grep -v "no test files"
 

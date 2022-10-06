@@ -2,10 +2,17 @@ package utils
 
 import (
 	"encoding/binary"
+	"errors"
+	"reflect"
+	"unsafe"
 )
 
 const (
 	reqIdEncoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+)
+
+var (
+	ErrNoRows = errors.New("no rows in result set")
 )
 
 func EncodeRequestId(requestId uint32, instanceId uint8) string {
@@ -24,4 +31,20 @@ func EncodeRequestId(requestId uint32, instanceId uint8) string {
 	encoded[1] = reqIdEncoding[((id[1]>>6)|(id[0]<<2))&0x1F]
 	encoded[0] = reqIdEncoding[id[0]>>3]
 	return string(encoded[:])
+}
+
+func S2B(s string) (b []byte) {
+	/* #nosec G103 */
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	/* #nosec G103 */
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh.Data = sh.Data
+	bh.Cap = sh.Len
+	bh.Len = sh.Len
+	return b
+}
+
+func B2S(b []byte) string {
+	/* #nosec G103 */
+	return *(*string)(unsafe.Pointer(&b))
 }
