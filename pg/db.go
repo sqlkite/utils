@@ -32,3 +32,32 @@ func Scalar[T any](db DB, sql string, args ...any) (T, error) {
 	}
 	return value, err
 }
+
+func (db DB) TableExists(tableName string) (bool, error) {
+	sql := `
+		select exists (
+			select from pg_tables
+			where schemaname = 'public' and tablename = $1
+		)
+	`
+	exists, err := Scalar[bool](db, sql, tableName)
+	if err == utils.ErrNoRows {
+		return false, nil
+	}
+	return exists, err
+}
+
+func (db DB) Transaction(fn func(tx pgx.Tx) error) error {
+	bg := context.Background()
+	tx, err := db.Pool.Begin(bg)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(bg)
+	if err := fn(tx); err != nil {
+		return err
+	}
+
+	return tx.Commit(bg)
+}

@@ -27,23 +27,43 @@ func Test_New_Success(t *testing.T) {
 }
 
 func Test_Scalar(t *testing.T) {
+	testConn(func(conn Conn) {
+		value, err := Scalar[int](conn, "select 123 from doesnotexist")
+		assert.True(t, strings.Contains(err.Error(), "sqlite: no such table: doesnotexist (code: 1)"))
+		assert.Equal(t, value, 0)
+
+		value, err = Scalar[int](conn, "select 566")
+		assert.Nil(t, err)
+		assert.Equal(t, value, 566)
+
+		value, err = Scalar[int](conn, "select 566 where $1", false)
+		assert.True(t, errors.Is(err, utils.ErrNoRows))
+		assert.Equal(t, value, 0)
+
+		str, err := Scalar[string](conn, "select 'hello'")
+		assert.Nil(t, err)
+		assert.Equal(t, str, "hello")
+	})
+}
+
+func Test_Conn_TableExist(t *testing.T) {
+	testConn(func(conn Conn) {
+		exists, err := conn.TableExists("migrations")
+		assert.Nil(t, err)
+		assert.False(t, exists)
+
+		conn.Exec("create table migrations (id int)")
+		exists, err = conn.TableExists("migrations")
+		assert.Nil(t, err)
+		assert.True(t, exists)
+	})
+}
+
+func testConn(fn func(Conn)) {
 	conn, err := New(":memory:", false)
-	assert.Nil(t, err)
+	if err != nil {
+		panic(err)
+	}
 	defer conn.Close()
-
-	value, err := Scalar[int](conn, "select 123 from doesnotexist")
-	assert.True(t, strings.Contains(err.Error(), "sqlite: no such table: doesnotexist (code: 1)"))
-	assert.Equal(t, value, 0)
-
-	value, err = Scalar[int](conn, "select 566")
-	assert.Nil(t, err)
-	assert.Equal(t, value, 566)
-
-	value, err = Scalar[int](conn, "select 566 where $1", false)
-	assert.True(t, errors.Is(err, utils.ErrNoRows))
-	assert.Equal(t, value, 0)
-
-	str, err := Scalar[string](conn, "select 'hello'")
-	assert.Nil(t, err)
-	assert.Equal(t, str, "hello")
+	fn(conn)
 }

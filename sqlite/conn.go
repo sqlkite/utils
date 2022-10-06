@@ -35,3 +35,17 @@ func Scalar[T any](conn Conn, sql string, args ...any) (T, error) {
 	}
 	return value, err
 }
+
+func (c Conn) TableExists(tableName string) (bool, error) {
+	sql := `
+		select exists (
+			select 1 from sqlite_master
+			where type = 'table' and name = ?1
+		)
+	`
+	exists, err := Scalar[bool](c, sql, tableName)
+	if err == utils.ErrNoRows {
+		return false, nil
+	}
+	return exists, err
+}
