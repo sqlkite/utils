@@ -53,3 +53,16 @@ func Test_Get_Fuzz(t *testing.T) {
 		assert.Equal(t, i.id, id)
 	}
 }
+
+func Test_Put(t *testing.T) {
+	ti1, ti2 := new(TestItem), new(TestItem)
+	m := NewMap[*TestItem](nil)
+
+	m.Put("i1", ti1)
+	actual, _ := m.Get("i1")
+	assert.Equal(t, actual, ti1)
+
+	m.Put("i1", ti2)
+	actual, _ = m.Get("i1")
+	assert.Equal(t, actual, ti2)
+}

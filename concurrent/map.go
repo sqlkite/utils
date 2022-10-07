@@ -33,6 +33,10 @@ func (m Map[V]) Get(id string) (V, error) {
 	return m.shard(id).get(id)
 }
 
+func (m Map[V]) Put(id string, value V) {
+	m.shard(id).put(id, value)
+}
+
 func (m Map[V]) shard(id string) *shard[V] {
 	var h uint32
 	for i := 0; i < len(id); i++ {
@@ -76,4 +80,10 @@ func (s *shard[V]) get(id string) (V, error) {
 	}
 
 	return ivalue.(V), nil
+}
+
+func (s *shard[V]) put(id string, value V) {
+	s.Lock()
+	s.lookup[id] = value
+	s.Unlock()
 }
