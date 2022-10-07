@@ -26,6 +26,10 @@ func NewField() *Field {
 	}
 }
 
+func (f *Field) KV() []byte {
+	return f.kv
+}
+
 func (f *Field) Int(key string, value int) *Field {
 	f.fields[key] = value
 	return f

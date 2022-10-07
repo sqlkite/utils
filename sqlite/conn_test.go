@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -57,6 +58,13 @@ func Test_Conn_TableExist(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, exists)
 	})
+}
+
+func Test_Conn_Placeholder(t *testing.T) {
+	conn := Conn{}
+	for i := 0; i < 50; i++ {
+		assert.Equal(t, conn.Placeholder(i), fmt.Sprintf("?%d", i+1))
+	}
 }
 
 func testConn(fn func(Conn)) {
