@@ -12,8 +12,8 @@ func Test_MigrateAll_NormalRun(t *testing.T) {
 	bg := context.Background()
 	db.Exec(bg, "drop table if exists test_migrations")
 	db.Exec(bg, "drop table if exists gobl_migrations")
-	migrateTest := func() {
-		err := MigrateAll(db, []Migration{
+	migrateTest := func(appName string) {
+		err := MigrateAll(db, appName, []Migration{
 			Migration{1, MigrateOne},
 			Migration{2, MigrateTwo},
 		})
@@ -36,18 +36,22 @@ func Test_MigrateAll_NormalRun(t *testing.T) {
 		assert.Equal(t, version, 2)
 
 		assert.False(t, rows.Next())
+
+		current, err := GetCurrentMigrationVersion(db, appName)
+		assert.Nil(t, err)
+		assert.Equal(t, current, 2)
 	}
 
-	migrateTest()
-	migrateTest() // this should be a noop
+	migrateTest("app1")
+	migrateTest("app1") // this should be a noop
 }
 
 func Test_MigrateAll_Error(t *testing.T) {
 	bg := context.Background()
 	db.Exec(bg, "drop table if exists test_migrations")
 	db.Exec(bg, "drop table if exists gobl_migrations")
-	migrateTest := func() {
-		err := MigrateAll(db, []Migration{
+	migrateTest := func(appName string) {
+		err := MigrateAll(db, appName, []Migration{
 			Migration{1, MigrateOne},
 			Migration{2, MigrateTwo},
 			Migration{3, MigrateErr},
@@ -73,8 +77,8 @@ func Test_MigrateAll_Error(t *testing.T) {
 		assert.False(t, rows.Next())
 	}
 
-	migrateTest()
-	migrateTest() // this should be a noop
+	migrateTest("app1")
+	migrateTest("app1") // this should be a noop
 }
 
 func MigrateOne(tx pgx.Tx) error {

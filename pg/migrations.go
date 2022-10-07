@@ -14,8 +14,8 @@ type Migration struct {
 	Migrate Migrate
 }
 
-func MigrateAll(db DB, migrations []Migration) error {
-	latestVersion, err := GetCurrentMigrationVersion(db)
+func MigrateAll(db DB, appName string, migrations []Migration) error {
+	latestVersion, err := GetCurrentMigrationVersion(db, appName)
 	if err != nil {
 		return err
 	}
@@ -32,8 +32,8 @@ func MigrateAll(db DB, migrations []Migration) error {
 			}
 
 			_, err = tx.Exec(context.Background(), `
-				insert into gobl_migrations (version) values ($1)
-			`, version)
+				insert into gobl_migrations (app, version) values ($1, $2)
+			`, appName, version)
 
 			return err
 		})
@@ -46,7 +46,7 @@ func MigrateAll(db DB, migrations []Migration) error {
 	return nil
 }
 
-func GetCurrentMigrationVersion(db DB) (int, error) {
+func GetCurrentMigrationVersion(db DB, appName string) (int, error) {
 	exists, err := db.TableExists("gobl_migrations")
 	if err != nil {
 		return 0, err
@@ -55,14 +55,23 @@ func GetCurrentMigrationVersion(db DB) (int, error) {
 	if !exists {
 		_, err := db.Exec(context.Background(), `
 			create table gobl_migrations (
-				version integer not null
+				app text not null,
+				version integer not null,
+				created timestamptz not null default now(),
+				primary key(app, version)
 			)
 		`)
 		return 0, err
 	}
 
-	return Scalar[int](db, `
+	value, err := Scalar[*int](db, `
 		select max(version)
 		from gobl_migrations
-	`)
+		where app = $1
+	`, appName)
+
+	if err != nil || value == nil {
+		return 0, err
+	}
+	return *value, nil
 }
