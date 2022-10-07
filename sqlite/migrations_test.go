@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"strings"
 	"testing"
 
 	"src.goblgobl.com/tests/assert"
@@ -36,9 +35,7 @@ func Test_MigrateAll_NormalRun(t *testing.T) {
 
 	testConn(func(conn Conn) {
 		migrateTest(conn)
-
-		// this should be a noop
-		migrateTest(conn)
+		migrateTest(conn) // this should be a noop
 	})
 }
 
@@ -49,7 +46,7 @@ func Test_MigrateAll_Error(t *testing.T) {
 			Migration{2, MigrateTwo},
 			Migration{3, MigrateErr},
 		})
-		assert.True(t, strings.HasPrefix(err.Error(), "Failed to run migration #3"))
+		assert.StringContains(t, err.Error(), "Failed to run sqlite migration #3")
 
 		value, err := Scalar[int](conn, "select * from test_migrations")
 		assert.Nil(t, err)

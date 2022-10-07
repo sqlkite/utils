@@ -23,7 +23,7 @@ func MigrateAll(conn Conn, migrations []Migration) error {
 
 		err := conn.Transaction(func() error {
 			if err := migration.Migrate(conn); err != nil {
-				return fmt.Errorf("Failed to run migration #%d - %w", version, err)
+				return fmt.Errorf("Failed to run sqlite migration #%d - %w", version, err)
 			}
 
 			return conn.Exec(`

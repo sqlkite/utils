@@ -45,21 +45,25 @@ func Test_Scalar(t *testing.T) {
 }
 
 func Test_DB_TableExist(t *testing.T) {
+	bg := context.Background()
+	db.Exec(bg, "drop table if exists test_migrations")
 	exists, err := db.TableExists("test_migrations")
 	assert.Nil(t, err)
 	assert.False(t, exists)
 
-	db.Exec(context.Background(), "create table if not exists test_migrations (id int)")
+	db.Exec(bg, "create table if not exists test_migrations (id int)")
 	exists, err = db.TableExists("test_migrations")
-	db.Exec(context.Background(), "drop table test_migrations")
 	assert.Nil(t, err)
 	assert.True(t, exists)
 }
 
 func Test_DB_Transaction_Rollback(t *testing.T) {
+	bg := context.Background()
+	db.Exec(bg, "drop table if exists test_migrations")
+
 	forcedErr := errors.New("forced error")
 	err := db.Transaction(func(tx pgx.Tx) error {
-		_, err := tx.Exec(context.Background(), "create table if not exists test_migrations (id int)")
+		_, err := tx.Exec(bg, "create table if not exists test_migrations (id int)")
 		assert.Nil(t, err)
 		return forcedErr
 	})
@@ -79,10 +83,4 @@ func Test_DB_Transaction_Commit(t *testing.T) {
 	exists, _ := db.TableExists("test_migrations")
 	db.Exec(context.Background(), "drop table test_migrations")
 	assert.True(t, exists)
-}
-
-func testDB(fn func(DB)) {
-
-	defer db.Close()
-	fn(db)
 }
