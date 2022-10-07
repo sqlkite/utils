@@ -166,6 +166,12 @@ func (l *KvLogger) Field(field Field) Logger {
 	return l
 }
 
+// Shouldn't be called. Exposed for a few tests. Would like to
+// find a better way, but who has time for that?
+func (l *KvLogger) SetOut(out io.Writer) {
+	l.out = out
+}
+
 // "starts" a new log message. Every message always contains a timestamp (t) a
 // context (c) and a level (l).
 func (l *KvLogger) start(ctx string, meta []byte) Logger {
