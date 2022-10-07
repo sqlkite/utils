@@ -10,7 +10,7 @@ type Migration struct {
 }
 
 func MigrateAll(conn Conn, migrations []Migration) error {
-	latestVersion, err := getCurrentVersion(conn)
+	latestVersion, err := GetCurrentMigrationVersion(conn)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func MigrateAll(conn Conn, migrations []Migration) error {
 	return nil
 }
 
-func getCurrentVersion(conn Conn) (int, error) {
+func GetCurrentMigrationVersion(conn Conn) (int, error) {
 	exists, err := conn.TableExists("gobl_migrations")
 	if err != nil {
 		return 0, err

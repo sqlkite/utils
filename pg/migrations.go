@@ -15,7 +15,7 @@ type Migration struct {
 }
 
 func MigrateAll(db DB, migrations []Migration) error {
-	latestVersion, err := getCurrentVersion(db)
+	latestVersion, err := GetCurrentMigrationVersion(db)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func MigrateAll(db DB, migrations []Migration) error {
 	return nil
 }
 
-func getCurrentVersion(db DB) (int, error) {
+func GetCurrentMigrationVersion(db DB) (int, error) {
 	exists, err := db.TableExists("gobl_migrations")
 	if err != nil {
 		return 0, err
