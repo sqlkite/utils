@@ -11,6 +11,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var (
+	ErrNoRows = pgx.ErrNoRows
+)
+
+type Row = pgx.Row
+
 type DB struct {
 	*pgxpool.Pool
 }
@@ -28,9 +34,6 @@ func Scalar[T any](db DB, sql string, args ...any) (T, error) {
 
 	var value T
 	err := row.Scan(&value)
-	if err == pgx.ErrNoRows {
-		return value, utils.ErrNoRows
-	}
 	return value, err
 }
 
@@ -42,7 +45,7 @@ func (db DB) TableExists(tableName string) (bool, error) {
 		)
 	`
 	exists, err := Scalar[bool](db, sql, tableName)
-	if err == utils.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return false, nil
 	}
 	return exists, err

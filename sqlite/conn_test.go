@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"src.goblgobl.com/sqlite"
 	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils"
 )
 
 func Test_New_InvalidPath(t *testing.T) {
@@ -21,9 +21,8 @@ func Test_New_Success(t *testing.T) {
 	defer conn.Close()
 
 	var value int
-	exists, err := conn.Row("select 1").Scan(&value)
+	err = conn.Row("select 1").Scan(&value)
 	assert.Nil(t, err)
-	assert.True(t, exists)
 	assert.Equal(t, value, 1)
 }
 
@@ -38,7 +37,7 @@ func Test_Scalar(t *testing.T) {
 		assert.Equal(t, value, 566)
 
 		value, err = Scalar[int](conn, "select 566 where $1", false)
-		assert.True(t, errors.Is(err, utils.ErrNoRows))
+		assert.True(t, errors.Is(err, sqlite.ErrNoRows))
 		assert.Equal(t, value, 0)
 
 		str, err := Scalar[string](conn, "select 'hello'")

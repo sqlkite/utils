@@ -8,7 +8,7 @@ require (
 	github.com/goccy/go-json v0.9.11
 	github.com/jackc/pgx/v5 v5.0.1
 	github.com/valyala/fasthttp v1.40.0
-	src.goblgobl.com/sqlite v0.0.0-20221004085915-79e18f2e2ef4
+	src.goblgobl.com/sqlite v0.0.0-20221008111027-09768b2420ed
 	src.goblgobl.com/tests v0.0.0-20221004060545-4f8203038cad
 )
 

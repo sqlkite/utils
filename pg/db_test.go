@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"src.goblgobl.com/tests"
 	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils"
 )
 
 var db DB
@@ -37,7 +36,7 @@ func Test_Scalar(t *testing.T) {
 	assert.Equal(t, value, 566)
 
 	value, err = Scalar[int](db, "select 566 where $1", false)
-	assert.True(t, errors.Is(err, utils.ErrNoRows))
+	assert.True(t, errors.Is(err, pgx.ErrNoRows))
 	assert.Equal(t, value, 0)
 
 	str, err := Scalar[string](db, "select 'hello'")

@@ -52,5 +52,7 @@ src.goblgobl.com/sqlite v0.0.0-20221004061808-c0c5df3bff28 h1:hNedZNzhuMOIJGS2lY
 src.goblgobl.com/sqlite v0.0.0-20221004061808-c0c5df3bff28/go.mod h1:R2PshReaqmuRhSdMawsqw5PK15LWT5CgoCvkWUi0nuk=
 src.goblgobl.com/sqlite v0.0.0-20221004085915-79e18f2e2ef4 h1:lfwMvbUvNJBEyJ6+eZH1F3B2j4Oy/d1ArfwEGMr0Z2I=
 src.goblgobl.com/sqlite v0.0.0-20221004085915-79e18f2e2ef4/go.mod h1:R2PshReaqmuRhSdMawsqw5PK15LWT5CgoCvkWUi0nuk=
+src.goblgobl.com/sqlite v0.0.0-20221008111027-09768b2420ed h1:is1EN25v49OB019Ttdc64HV7pQiHwIBMuyPwk/2iLjw=
+src.goblgobl.com/sqlite v0.0.0-20221008111027-09768b2420ed/go.mod h1:R2PshReaqmuRhSdMawsqw5PK15LWT5CgoCvkWUi0nuk=
 src.goblgobl.com/tests v0.0.0-20221004060545-4f8203038cad h1:q+FeXdRQW9VVpI35kGpDkYh1Qz/VohXkKWf3liDx1Uc=
 src.goblgobl.com/tests v0.0.0-20221004060545-4f8203038cad/go.mod h1:y4jmMhPB34WWZpymu9XjldE0KoFIlY+/xogODE2X26Q=

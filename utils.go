@@ -2,17 +2,12 @@ package utils
 
 import (
 	"encoding/binary"
-	"errors"
 	"reflect"
 	"unsafe"
 )
 
 const (
 	reqIdEncoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-)
-
-var (
-	ErrNoRows = errors.New("no rows in result set")
 )
 
 func EncodeRequestId(requestId uint32, instanceId uint8) string {
