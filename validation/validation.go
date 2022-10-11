@@ -9,6 +9,10 @@ var (
 	InvalidStringType    = M(utils.VAL_STRING_TYPE, "must be a string")
 	InvalidStringLength  = M(utils.VAL_STRING_LEN, "must be between %d and %d characters")
 	InvalidStringPattern = M(utils.VAL_STRING_PATTERN, "is not valid")
+	InvalidIntType       = M(utils.VAL_INT_TYPE, "must be a number")
+	InvalidIntMin        = M(utils.VAL_INT_MIN, "must be greater or equal to %d")
+	InvalidIntMax        = M(utils.VAL_INT_MAX, "must be less than or equal to %d")
+	InvalidIntRange      = M(utils.VAL_INT_RANGE, "must be between %d and %d")
 )
 
 func Checkout() *Result {
@@ -46,6 +50,26 @@ type DataRange struct {
 func Range(min any, max any) any {
 	return DataRange{
 		Min: min,
+		Max: max,
+	}
+}
+
+type DataMin struct {
+	Min any `json:"min"`
+}
+
+func Min(min any) any {
+	return DataMin{
+		Min: min,
+	}
+}
+
+type DataMax struct {
+	Max any `json:"max"`
+}
+
+func Max(max any) any {
+	return DataMax{
 		Max: max,
 	}
 }
