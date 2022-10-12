@@ -18,6 +18,7 @@ func Int(field string, required bool) *InputInt {
 }
 
 type InputInt struct {
+	dflt        int
 	field       string
 	required    bool
 	validators  []IntValidator
@@ -35,6 +36,9 @@ func (i *InputInt) validate(input typed.Typed, res *Result) {
 		} else if exists {
 			res.add(i.errType)
 		}
+		if dflt := i.dflt; dflt != 0 {
+			input[field] = dflt
+		}
 		return
 	}
 
@@ -42,6 +46,11 @@ func (i *InputInt) validate(input typed.Typed, res *Result) {
 		value = validator.Validate(value, input, res)
 	}
 	input[field] = value
+}
+
+func (i *InputInt) Default(value int) *InputInt {
+	i.dflt = value
+	return i
 }
 
 func (i *InputInt) Min(min int) *InputInt {
