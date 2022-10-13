@@ -197,6 +197,55 @@ func Test_Int_Func(t *testing.T) {
 		Field("f", InvalidIntMax, nil)
 }
 
+func Test_Bool_Required(t *testing.T) {
+	i := Input().
+		Field(Bool("required", false)).
+		Field(Bool("agree", true))
+
+	_, res := testInput(i)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("required").
+		Field("agree", Required)
+
+	_, res = testInput(i, "agree", true)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("required", "agree")
+}
+
+func Test_Bool_Default(t *testing.T) {
+	i := Input().
+		Field(Bool("a", false).Default(true)).
+		Field(Bool("b", true).Default(true))
+
+	// default doesn't really make sense with required, required
+	// takes precedence
+	data, res := testInput(i)
+	assert.Equal(t, data.Bool("a"), true)
+	assert.Validation(t, res).
+		Field("b", Required)
+}
+
+func Test_Bool_Func(t *testing.T) {
+	i := Input().
+		Field(Bool("f", false).Func(func(field string, value bool, input typed.Typed, res *Result) bool {
+			if value == false {
+				return true
+			}
+			res.add(inputError(field, InvalidBoolType, nil))
+			return value
+		}))
+
+	data, res := testInput(i, "f", false)
+	assert.Equal(t, data.Bool("f"), true)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("f")
+
+	data, res = testInput(i, "f", true)
+	assert.Equal(t, data.Bool("f"), true)
+	assert.Validation(t, res).
+		Field("f", InvalidBoolType, nil)
+}
+
 func testInput(i *input, args ...any) (typed.Typed, *Result) {
 	m := make(typed.Typed, len(args)/2)
 	for i := 0; i < len(args); i += 2 {

@@ -9,6 +9,7 @@ const (
 	VAL_INT_MIN        = 1006
 	VAL_INT_MAX        = 1007
 	VAL_INT_RANGE      = 1008
+	VAL_BOOL_TYPE      = 1009
 
 	RES_SERVER_ERROR         = 2001
 	RES_SERIALIZE_STATIC     = 2002

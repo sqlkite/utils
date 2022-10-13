@@ -13,6 +13,7 @@ var (
 	InvalidIntMin        = M(utils.VAL_INT_MIN, "must be greater or equal to %d")
 	InvalidIntMax        = M(utils.VAL_INT_MAX, "must be less than or equal to %d")
 	InvalidIntRange      = M(utils.VAL_INT_RANGE, "must be between %d and %d")
+	InvalidBoolType      = M(utils.VAL_BOOL_TYPE, "must be true or false")
 )
 
 func Checkout() *Result {
