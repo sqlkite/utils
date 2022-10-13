@@ -8,10 +8,9 @@ type BoolValidator interface {
 	Validate(value bool, rest typed.Typed, res *Result) bool
 }
 
-func Bool(field string, required bool) *InputBool {
+func Bool(field string) *InputBool {
 	return &InputBool{
 		field:       field,
-		required:    required,
 		errType:     inputError(field, InvalidBoolType, nil),
 		errRequired: inputError(field, Required, nil),
 	}
@@ -20,10 +19,21 @@ func Bool(field string, required bool) *InputBool {
 type InputBool struct {
 	dflt        bool
 	field       string
+	coerce      bool
 	required    bool
 	validators  []BoolValidator
 	errType     InvalidField
 	errRequired InvalidField
+}
+
+func (i *InputBool) Required() *InputBool {
+	i.required = true
+	return i
+}
+
+func (i *InputBool) Coerce() *InputBool {
+	i.coerce = true
+	return i
 }
 
 func (i *InputBool) validate(input typed.Typed, res *Result) {
@@ -31,14 +41,15 @@ func (i *InputBool) validate(input typed.Typed, res *Result) {
 	value, exists := input.BoolIf(field)
 
 	if !exists {
-		if _, exists = input[field]; !exists && i.required {
-			res.add(i.errRequired)
-		} else if exists {
-			res.add(i.errType)
+		if _, exists := input[field]; !exists {
+			if i.required {
+				res.add(i.errRequired)
+			} else if dflt := i.dflt; dflt != false {
+				input[field] = dflt
+			}
+			return
 		}
-		if dflt := i.dflt; dflt != false {
-			input[field] = dflt
-		}
+		res.add(i.errType)
 		return
 	}
 

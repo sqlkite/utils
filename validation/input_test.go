@@ -9,8 +9,8 @@ import (
 
 func Test_String_Required(t *testing.T) {
 	i := Input().
-		Field(String("name", false)).
-		Field(String("code", true))
+		Field(String("name")).
+		Field(String("code").Required())
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -24,8 +24,8 @@ func Test_String_Required(t *testing.T) {
 
 func Test_String_Default(t *testing.T) {
 	i := Input().
-		Field(String("a", false).Default("leto")).
-		Field(String("b", true).Default("leto"))
+		Field(String("a").Default("leto")).
+		Field(String("b").Required().Default("leto"))
 
 	// default doesn't really make sense with required, required
 	// takes precedence
@@ -37,7 +37,7 @@ func Test_String_Default(t *testing.T) {
 
 func Test_String_Type(t *testing.T) {
 	i := Input().
-		Field(String("name", false))
+		Field(String("name"))
 
 	_, res := testInput(i, "name", 3)
 	assert.Validation(t, res).
@@ -46,9 +46,9 @@ func Test_String_Type(t *testing.T) {
 
 func Test_String_Length(t *testing.T) {
 	i := Input().
-		Field(String("f1", false).Length(0, 3)).
-		Field(String("f2", false).Length(2, 0)).
-		Field(String("f3", false).Length(2, 4))
+		Field(String("f1").Length(0, 3)).
+		Field(String("f2").Length(2, 0)).
+		Field(String("f3").Length(2, 4))
 
 	_, res := testInput(i, "f1", "1234", "f2", "1", "f3", "1")
 	assert.Validation(t, res).
@@ -76,7 +76,7 @@ func Test_String_Length(t *testing.T) {
 
 func Test_String_Pattern(t *testing.T) {
 	i := Input().
-		Field(String("f", false).Pattern("\\d."))
+		Field(String("f").Pattern("\\d."))
 
 	_, res := testInput(i, "f", "1d")
 	assert.Validation(t, res).
@@ -89,7 +89,7 @@ func Test_String_Pattern(t *testing.T) {
 
 func Test_String_Func(t *testing.T) {
 	i := Input().
-		Field(String("f", false).Func(func(field string, value string, input typed.Typed, res *Result) string {
+		Field(String("f").Func(func(field string, value string, input typed.Typed, res *Result) string {
 			if value == "a" {
 				return "a1"
 			}
@@ -110,8 +110,8 @@ func Test_String_Func(t *testing.T) {
 
 func Test_Int_Required(t *testing.T) {
 	i := Input().
-		Field(Int("name", false)).
-		Field(Int("code", true))
+		Field(Int("name")).
+		Field(Int("code").Required())
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -123,10 +123,24 @@ func Test_Int_Required(t *testing.T) {
 		FieldsHaveNoErrors("code", "name")
 }
 
+func Test_Int_Type(t *testing.T) {
+	i := Input().
+		Field(Int("a"))
+
+	_, res := testInput(i, "a", "leto")
+	assert.Validation(t, res).
+		Field("a", InvalidIntType)
+
+	data, res := testInput(i, "a", "-3292")
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("a")
+	assert.Equal(t, data.Int("a"), -3292)
+}
+
 func Test_Int_Default(t *testing.T) {
 	i := Input().
-		Field(Int("a", false).Default(99)).
-		Field(Int("b", true).Default(88))
+		Field(Int("a").Default(99)).
+		Field(Int("b").Required().Default(88))
 
 	// default doesn't really make sense with required, required
 	// takes precedence
@@ -138,8 +152,8 @@ func Test_Int_Default(t *testing.T) {
 
 func Test_Int_MinMax(t *testing.T) {
 	i := Input().
-		Field(Int("f1", false).Min(10)).
-		Field(Int("f2", false).Max(10))
+		Field(Int("f1").Min(10)).
+		Field(Int("f2").Max(10))
 
 	_, res := testInput(i, "f1", 9, "f2", 11)
 	assert.Validation(t, res).
@@ -157,7 +171,7 @@ func Test_Int_MinMax(t *testing.T) {
 
 func Test_Int_Range(t *testing.T) {
 	i := Input().
-		Field(Int("f1", false).Range(10, 20))
+		Field(Int("f1").Range(10, 20))
 
 	for _, value := range []int{9, 21, 0, 30} {
 		_, res := testInput(i, "f1", value)
@@ -178,7 +192,7 @@ func Test_Int_Range(t *testing.T) {
 
 func Test_Int_Func(t *testing.T) {
 	i := Input().
-		Field(Int("f", false).Func(func(field string, value int, input typed.Typed, res *Result) int {
+		Field(Int("f").Func(func(field string, value int, input typed.Typed, res *Result) int {
 			if value == 9001 {
 				return 9002
 			}
@@ -199,8 +213,8 @@ func Test_Int_Func(t *testing.T) {
 
 func Test_Bool_Required(t *testing.T) {
 	i := Input().
-		Field(Bool("required", false)).
-		Field(Bool("agree", true))
+		Field(Bool("required")).
+		Field(Bool("agree").Required())
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -212,10 +226,24 @@ func Test_Bool_Required(t *testing.T) {
 		FieldsHaveNoErrors("required", "agree")
 }
 
+func Test_Bool_Type(t *testing.T) {
+	i := Input().
+		Field(Bool("a"))
+
+	_, res := testInput(i, "a", "leto")
+	assert.Validation(t, res).
+		Field("a", InvalidBoolType)
+
+	data, res := testInput(i, "a", "true")
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("a")
+	assert.Equal(t, data.Bool("a"), true)
+}
+
 func Test_Bool_Default(t *testing.T) {
 	i := Input().
-		Field(Bool("a", false).Default(true)).
-		Field(Bool("b", true).Default(true))
+		Field(Bool("a").Default(true)).
+		Field(Bool("b").Required().Default(true))
 
 	// default doesn't really make sense with required, required
 	// takes precedence
@@ -227,7 +255,7 @@ func Test_Bool_Default(t *testing.T) {
 
 func Test_Bool_Func(t *testing.T) {
 	i := Input().
-		Field(Bool("f", false).Func(func(field string, value bool, input typed.Typed, res *Result) bool {
+		Field(Bool("f").Func(func(field string, value bool, input typed.Typed, res *Result) bool {
 			if value == false {
 				return true
 			}

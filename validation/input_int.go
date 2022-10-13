@@ -8,11 +8,10 @@ type IntValidator interface {
 	Validate(value int, rest typed.Typed, res *Result) int
 }
 
-func Int(field string, required bool) *InputInt {
+func Int(field string) *InputInt {
 	return &InputInt{
 		field:       field,
-		required:    required,
-		errType:     inputError(field, InvalidStringType, nil),
+		errType:     inputError(field, InvalidIntType, nil),
 		errRequired: inputError(field, Required, nil),
 	}
 }
@@ -31,14 +30,15 @@ func (i *InputInt) validate(input typed.Typed, res *Result) {
 	value, exists := input.IntIf(field)
 
 	if !exists {
-		if _, exists = input[field]; !exists && i.required {
-			res.add(i.errRequired)
-		} else if exists {
-			res.add(i.errType)
+		if _, exists := input[field]; !exists {
+			if i.required {
+				res.add(i.errRequired)
+			} else if dflt := i.dflt; dflt != 0 {
+				input[field] = dflt
+			}
+			return
 		}
-		if dflt := i.dflt; dflt != 0 {
-			input[field] = dflt
-		}
+		res.add(i.errType)
 		return
 	}
 
@@ -46,6 +46,11 @@ func (i *InputInt) validate(input typed.Typed, res *Result) {
 		value = validator.Validate(value, input, res)
 	}
 	input[field] = value
+}
+
+func (i *InputInt) Required() *InputInt {
+	i.required = true
+	return i
 }
 
 func (i *InputInt) Default(value int) *InputInt {

@@ -98,8 +98,23 @@ func (t Typed) BoolIf(key string) (bool, bool) {
 	if exists == false {
 		return false, false
 	}
-	if n, ok := value.(bool); ok {
-		return n, true
+	switch t := value.(type) {
+	case bool:
+		return t, true
+	case int:
+		switch t {
+		case 1:
+			return true, true
+		case 0:
+			return false, true
+		}
+	case string:
+		switch t {
+		case "true", "TRUE", "True":
+			return true, true
+		case "false", "FALSE", "False":
+			return false, true
+		}
 	}
 	return false, false
 }

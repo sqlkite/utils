@@ -41,7 +41,7 @@ func Test_Keys(t *testing.T) {
 }
 
 func Test_Bool(t *testing.T) {
-	typed := New(build("log", true, "ace", false, "nope", 99))
+	typed := New(build("log", true, "ace", false, "nope", 99, "s1", "true", "s2", "True", "s3", "TRUE", "s4", 1, "s5", "false", "s6", "False", "s7", "FALSE", "s8", 0))
 	assert.Equal(t, typed.Bool("log"), true)
 	assert.Equal(t, typed.BoolOr("log", false), true)
 	assert.Equal(t, typed.Bool("other"), false)
@@ -49,6 +49,18 @@ func Test_Bool(t *testing.T) {
 
 	assert.True(t, typed.BoolMust("log"))
 	assert.False(t, typed.BoolMust("ace"))
+
+	// coerce to 'true', 'True', 'TRUE', 1
+	assert.True(t, typed.BoolMust("s1"))
+	assert.True(t, typed.BoolMust("s2"))
+	assert.True(t, typed.BoolMust("s3"))
+	assert.True(t, typed.BoolMust("s4"))
+
+	// coerce to 'false', 'False', 'FALSE', 0
+	assert.False(t, typed.BoolMust("s5"))
+	assert.False(t, typed.BoolMust("s6"))
+	assert.False(t, typed.BoolMust("s7"))
+	assert.False(t, typed.BoolMust("s8"))
 
 	value, exists := typed.BoolIf("nope")
 	assert.False(t, value)

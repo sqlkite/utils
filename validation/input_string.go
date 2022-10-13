@@ -10,10 +10,9 @@ type StringValidator interface {
 	Validate(value string, rest typed.Typed, res *Result) string
 }
 
-func String(field string, required bool) *InputString {
+func String(field string) *InputString {
 	return &InputString{
 		field:       field,
-		required:    required,
 		errType:     inputError(field, InvalidStringType, nil),
 		errRequired: inputError(field, Required, nil),
 	}
@@ -48,6 +47,11 @@ func (i *InputString) validate(input typed.Typed, res *Result) {
 		value = validator.Validate(value, input, res)
 	}
 	input[field] = value
+}
+
+func (i *InputString) Required() *InputString {
+	i.required = true
+	return i
 }
 
 func (i *InputString) Default(value string) *InputString {
