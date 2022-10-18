@@ -22,5 +22,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	src.goblgobl.com/sqlite v0.0.0-20221009033359-8c46925b01b5 // indirect
+	src.goblgobl.com/sqlite v0.0.0-20221018031914-c4ff3ad281a7 // indirect
 )

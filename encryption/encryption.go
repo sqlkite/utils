@@ -35,7 +35,7 @@ func Encrypt(key []byte, plainText string) (Value, error) {
 	return Value{Nonce: nonce, Data: encrypted}, nil
 }
 
-func Decrypt(key []byte, value Value) ([]byte, error) {
+func Decrypt(key []byte, nonce []byte, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -45,5 +45,9 @@ func Decrypt(key []byte, value Value) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return gcm.Open(nil, value.Nonce, value.Data, nil)
+	return gcm.Open(nil, nonce, data, nil)
+}
+
+func DecryptValue(key []byte, value Value) ([]byte, error) {
+	return Decrypt(key, value.Nonce, value.Data)
 }
