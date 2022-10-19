@@ -2,17 +2,21 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"src.goblgobl.com/utils"
 	"src.goblgobl.com/utils/log"
+	"src.goblgobl.com/utils/typed"
+	"src.goblgobl.com/utils/uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
-	ErrNoRows = pgx.ErrNoRows
+	ErrNoRows         = pgx.ErrNoRows
+	ErrMoreThanOneRow = errors.New("Result contained more than 1 row")
 )
 
 type Row = pgx.Row
@@ -119,4 +123,31 @@ func (db DB) MustExec(sql string, args ...any) {
 	if _, err := db.Exec(context.Background(), sql, args...); err != nil {
 		panic(err)
 	}
+}
+
+func (db DB) RowToMap(sql string, args ...any) (typed.Typed, error) {
+	rows, err := db.Query(context.Background(), sql, args...)
+	if err != nil {
+		return typed.Typed{}, err
+	}
+
+	slice, err := pgx.CollectRows(rows, pgx.RowToMap)
+	if len(slice) != 1 {
+		return typed.Typed{}, ErrMoreThanOneRow
+	}
+	return typed.Typed(rowToMapTransform(slice[0])), nil
+}
+
+// for now, just fix uuids
+func rowToMapTransform(row map[string]any) map[string]any {
+	for key, value := range row {
+		if b, ok := value.([16]byte); ok && len(b) == 16 {
+			uuid, err := uuid.FromBytes(b[:])
+			if err != nil {
+				panic(err)
+			}
+			row[key] = uuid
+		}
+	}
+	return row
 }

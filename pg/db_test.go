@@ -89,3 +89,17 @@ func Test_DB_Placeholder(t *testing.T) {
 		assert.Equal(t, db.Placeholder(i), fmt.Sprintf("$%d", i+1))
 	}
 }
+
+func Test_DB_RowToMap(t *testing.T) {
+	m, err := db.RowToMap("select 1 where false")
+	fmt.Println(err)
+	assert.Equal(t, len(m), 0)
+
+	m, err = db.RowToMap("select 1 as a, 'b' as b, '1200783b-3463-4a98-a527-fc61b6ac32f2'::uuid as uuid")
+	assert.Nil(t, err)
+	assert.Equal(t, len(m), 3)
+	assert.Equal(t, m.Int("a"), 1)
+	assert.Equal(t, m.String("b"), "b")
+	assert.Equal(t, m.String("uuid"), "1200783b-3463-4a98-a527-fc61b6ac32f2")
+
+}

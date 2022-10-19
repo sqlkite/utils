@@ -6,6 +6,7 @@ import (
 	"src.goblgobl.com/sqlite"
 	"src.goblgobl.com/utils"
 	"src.goblgobl.com/utils/log"
+	"src.goblgobl.com/utils/typed"
 )
 
 var (
@@ -84,6 +85,14 @@ func Scalar[T any](conn Conn, sql string, args ...any) (T, error) {
 		return value, err
 	}
 	return value, err
+}
+
+func (c Conn) RowToMap(sql string, args ...any) (typed.Typed, error) {
+	m, err := c.Row(sql, args...).Map()
+	if err != nil {
+		return typed.Typed{}, err
+	}
+	return typed.Typed(m), err
 }
 
 func (c Conn) TableExists(tableName string) (bool, error) {

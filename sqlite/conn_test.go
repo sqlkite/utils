@@ -66,6 +66,20 @@ func Test_Conn_Placeholder(t *testing.T) {
 	}
 }
 
+func Test_Conn_RowToMap(t *testing.T) {
+	testConn(func(conn Conn) {
+		m, err := conn.RowToMap("select 1 where false")
+		assert.True(t, errors.Is(err, ErrNoRows))
+		assert.Equal(t, len(m), 0)
+
+		m, err = conn.RowToMap("select 1 as a, 'b' as b")
+		assert.Nil(t, err)
+		assert.Equal(t, len(m), 2)
+		assert.Equal(t, m.Int("a"), 1)
+		assert.Equal(t, m.String("b"), "b")
+	})
+}
+
 func testConn(fn func(Conn)) {
 	conn, err := New(":memory:", false)
 	if err != nil {

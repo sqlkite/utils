@@ -2,13 +2,29 @@ package pg
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"src.goblgobl.com/tests/assert"
 )
 
+/*
+TODO:
+These tests mutate the gobl_migrations table, which
+can cause some issue during local development of other gobl projects.
+We should just change the code so that the migration can receive a tx
+which would allow us to run these tests within a tx and rollback
+
+For now, we just try to copy the data and then restore it
+*/
+
 func Test_MigrateAll_NormalRun(t *testing.T) {
+	realMigrations := testGetRealMigrations()
+	defer func() {
+		testRestoreRealMigrations(realMigrations)
+	}()
+
 	bg := context.Background()
 	db.Exec(bg, "drop table if exists test_migrations")
 	db.Exec(bg, "drop table if exists gobl_migrations")
@@ -47,6 +63,11 @@ func Test_MigrateAll_NormalRun(t *testing.T) {
 }
 
 func Test_MigrateAll_Error(t *testing.T) {
+	realMigrations := testGetRealMigrations()
+	defer func() {
+		testRestoreRealMigrations(realMigrations)
+	}()
+
 	bg := context.Background()
 	db.Exec(bg, "drop table if exists test_migrations")
 	db.Exec(bg, "drop table if exists gobl_migrations")
@@ -94,4 +115,37 @@ func MigrateTwo(tx pgx.Tx) error {
 func MigrateErr(tx pgx.Tx) error {
 	_, err := tx.Exec(context.Background(), "fail")
 	return err
+}
+
+func testGetRealMigrations() map[string]int {
+	rows, err := db.Query(context.Background(), "select app, version from gobl_migrations")
+	if err != nil {
+		if strings.Contains(err.Error(), `relation "gobl_migrations" does not exist`) {
+			return nil
+		}
+		panic(err)
+	}
+	defer rows.Close()
+
+	migrations := make(map[string]int)
+	for rows.Next() {
+		var app string
+		var version int
+		rows.Scan(&app, &version)
+		migrations[app] = version
+	}
+	return migrations
+}
+
+func testRestoreRealMigrations(migrations map[string]int) {
+	for app, version := range migrations {
+		_, err := db.Exec(context.Background(), `
+			insert into gobl_migrations (app, version)
+			values ($1, $2)
+			on conflict do nothing
+		`, app, version)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
