@@ -132,6 +132,10 @@ func (db DB) RowToMap(sql string, args ...any) (typed.Typed, error) {
 	}
 
 	slice, err := pgx.CollectRows(rows, pgx.RowToMap)
+	if len(slice) == 0 {
+		return nil, ErrNoRows
+	}
+
 	if len(slice) != 1 {
 		return typed.Typed{}, ErrMoreThanOneRow
 	}
