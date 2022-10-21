@@ -138,6 +138,10 @@ func (db DB) RowToMap(sql string, args ...any) (typed.Typed, error) {
 	return typed.Typed(rowToMapTransform(slice[0])), nil
 }
 
+func (db DB) IsNotFound(err error) bool {
+	return err == ErrNoRows
+}
+
 // for now, just fix uuids
 func rowToMapTransform(row map[string]any) map[string]any {
 	for key, value := range row {

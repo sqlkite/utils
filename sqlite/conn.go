@@ -95,6 +95,10 @@ func (c Conn) RowToMap(sql string, args ...any) (typed.Typed, error) {
 	return typed.Typed(m), err
 }
 
+func (c Conn) IsNotFound(err error) bool {
+	return err == ErrNoRows
+}
+
 func (c Conn) TableExists(tableName string) (bool, error) {
 	sql := `
 		select exists (

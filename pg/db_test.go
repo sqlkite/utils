@@ -24,6 +24,7 @@ func init() {
 func Test_New_Invalid(t *testing.T) {
 	_, err := New("nope")
 	assert.Equal(t, err.Error(), "code: 3003 - cannot parse `nope`: failed to parse as DSN (invalid dsn)")
+	assert.False(t, db.IsNotFound(err))
 }
 
 func Test_Scalar(t *testing.T) {
@@ -36,6 +37,7 @@ func Test_Scalar(t *testing.T) {
 	assert.Equal(t, value, 566)
 
 	value, err = Scalar[int](db, "select 566 where $1", false)
+	assert.True(t, db.IsNotFound(err))
 	assert.True(t, errors.Is(err, pgx.ErrNoRows))
 	assert.Equal(t, value, 0)
 

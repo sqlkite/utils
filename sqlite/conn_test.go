@@ -29,6 +29,7 @@ func Test_New_Success(t *testing.T) {
 func Test_Scalar(t *testing.T) {
 	testConn(func(conn Conn) {
 		value, err := Scalar[int](conn, "select 123 from doesnotexist")
+		assert.False(t, conn.IsNotFound(err))
 		assert.True(t, strings.Contains(err.Error(), "sqlite: no such table: doesnotexist (code: 1)"))
 		assert.Equal(t, value, 0)
 
@@ -37,6 +38,7 @@ func Test_Scalar(t *testing.T) {
 		assert.Equal(t, value, 566)
 
 		value, err = Scalar[int](conn, "select 566 where $1", false)
+		assert.True(t, conn.IsNotFound(err))
 		assert.True(t, errors.Is(err, sqlite.ErrNoRows))
 		assert.Equal(t, value, 0)
 
