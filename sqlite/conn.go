@@ -90,7 +90,7 @@ func Scalar[T any](conn Conn, sql string, args ...any) (T, error) {
 func (c Conn) RowToMap(sql string, args ...any) (typed.Typed, error) {
 	m, err := c.Row(sql, args...).Map()
 	if err != nil {
-		return typed.Typed{}, err
+		return nil, err
 	}
 	return typed.Typed(m), err
 }
