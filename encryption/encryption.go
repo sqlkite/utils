@@ -1,53 +1,24 @@
 package encryption
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"io"
 
+	"golang.org/x/crypto/nacl/secretbox"
 	"src.goblgobl.com/utils"
 )
 
-type Value struct {
-	Nonce []byte `json:"nonce"`
-	Data  []byte `json:"data"`
-}
-
-func Encrypt(key []byte, plainText string) (Value, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return Value{}, err
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return Value{}, err
-	}
-
-	//Create a nonce. Nonce should be from GCM
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return Value{}, err
-	}
-
-	encrypted := gcm.Seal(nil, nonce, utils.S2B(plainText), nil)
-	return Value{Nonce: nonce, Data: encrypted}, nil
-}
-
-func Decrypt(key []byte, nonce []byte, data []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
+func Encrypt(key [32]byte, plainText string) ([]byte, error) {
+	var nonce [24]byte
+	nonceSlice := nonce[:]
+	if _, err := io.ReadFull(rand.Reader, nonceSlice); err != nil {
 		return nil, err
 	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-	return gcm.Open(nil, nonce, data, nil)
+	encrypted := secretbox.Seal(nonceSlice, utils.S2B(plainText), &nonce, &key)
+	return encrypted, nil
 }
 
-func DecryptValue(key []byte, value Value) ([]byte, error) {
-	return Decrypt(key, value.Nonce, value.Data)
+func Decrypt(key [32]byte, encrypted []byte) ([]byte, bool) {
+	nonce := (*[24]byte)(encrypted)
+	return secretbox.Open(nil, encrypted[24:], nonce, &key)
 }

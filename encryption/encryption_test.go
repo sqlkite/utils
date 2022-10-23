@@ -8,17 +8,12 @@ import (
 )
 
 func Test_Encrypt_Decrypt(t *testing.T) {
-	key := make([]byte, 32)
-	rand.Read(key)
+	var key [32]byte
+	rand.Read(key[:])
 
 	value, err := Encrypt(key, "it's over 9000!!")
 	assert.Nil(t, err)
-
-	plain, err := DecryptValue(key, value)
-	assert.Nil(t, err)
-	assert.Equal(t, string(plain), "it's over 9000!!")
-
-	plain, err = Decrypt(key, value.Nonce, value.Data)
-	assert.Nil(t, err)
+	plain, ok := Decrypt(key, value)
+	assert.True(t, ok)
 	assert.Equal(t, string(plain), "it's over 9000!!")
 }
