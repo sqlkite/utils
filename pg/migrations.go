@@ -31,11 +31,12 @@ func MigrateAll(db DB, appName string, migrations []Migration) error {
 				return fmt.Errorf("Failed to run pg migration #%d - %w", version, err)
 			}
 
-			_, err = tx.Exec(context.Background(), `
-				insert into gobl_migrations (app, version) values ($1, $2)
-			`, appName, version)
+			_, err = tx.Exec(context.Background(), `insert into gobl_migrations (app, version) values ($1, $2)`, appName, version)
 
-			return err
+			if err != nil {
+				return fmt.Errorf("pg insert into gobl_migrations - %w", err)
+			}
+			return nil
 		})
 
 		if err != nil {
@@ -61,7 +62,10 @@ func GetCurrentMigrationVersion(db DB, appName string) (int, error) {
 				primary key(app, version)
 			)
 		`)
-		return 0, err
+		if err != nil {
+			return 0, fmt.Errorf("pg create gobl_migrations - %w", err)
+		}
+		return 0, nil
 	}
 
 	value, err := Scalar[*int](db, `
@@ -70,8 +74,11 @@ func GetCurrentMigrationVersion(db DB, appName string) (int, error) {
 		where app = $1
 	`, appName)
 
-	if err != nil || value == nil {
-		return 0, err
+	if err != nil {
+		return 0, fmt.Errorf("pg max migration - %w", err)
+	}
+	if value == nil {
+		return 0, nil
 	}
 	return *value, nil
 }

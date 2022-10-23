@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"src.goblgobl.com/utils"
@@ -44,13 +45,16 @@ func Scalar[T any](db DB, sql string, args ...any) (T, error) {
 func (db DB) TableExists(tableName string) (bool, error) {
 	sql := `
 		select exists (
-			select from pg_tables
+			select 1 from pg_tables
 			where schemaname = 'public' and tablename = $1
 		)
 	`
 	exists, err := Scalar[bool](db, sql, tableName)
-	if err == pgx.ErrNoRows {
-		return false, nil
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("pg table exists - %w", err)
 	}
 	return exists, err
 }
