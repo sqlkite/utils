@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"src.goblgobl.com/tests/assert"
@@ -104,6 +105,28 @@ func Test_String_Func(t *testing.T) {
 
 	data, res = testInput(i, "f", "b")
 	assert.Equal(t, data.String("f"), "b")
+	assert.Validation(t, res).
+		Field("f", InvalidStringPattern, nil)
+}
+
+func Test_String_Converter(t *testing.T) {
+	i := Input().
+		Field(String("f").Convert(func(field string, value string, input typed.Typed, res *Result) any {
+			b, err := hex.DecodeString(value)
+			if err == nil {
+				return b
+			}
+			res.add(inputError(field, InvalidStringPattern, nil))
+			return nil
+		}))
+
+	data, res := testInput(i, "f", "FFFe")
+	assert.Bytes(t, data.Bytes("f"), []byte{255, 254})
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("f")
+
+	data, res = testInput(i, "f", "z")
+	assert.True(t, data.Bytes("f") == nil)
 	assert.Validation(t, res).
 		Field("f", InvalidStringPattern, nil)
 }

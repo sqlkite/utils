@@ -10,6 +10,8 @@ type StringValidator interface {
 	Validate(value string, rest typed.Typed, res *Result) string
 }
 
+type StringConverter func(field string, value string, input typed.Typed, res *Result) any
+
 func String(field string) *InputString {
 	return &InputString{
 		field:       field,
@@ -22,6 +24,7 @@ type InputString struct {
 	field       string
 	dflt        string
 	required    bool
+	converter   StringConverter
 	validators  []StringValidator
 	errType     InvalidField
 	errRequired InvalidField
@@ -46,7 +49,12 @@ func (i *InputString) validate(input typed.Typed, res *Result) {
 	for _, validator := range i.validators {
 		value = validator.Validate(value, input, res)
 	}
-	input[field] = value
+
+	if converter := i.converter; converter != nil {
+		input[field] = converter(field, value, input, res)
+	} else {
+		input[field] = value
+	}
 }
 
 func (i *InputString) Required() *InputString {
@@ -81,6 +89,11 @@ func (i *InputString) Func(fn func(field string, value string, input typed.Typed
 		fn:    fn,
 		field: i.field,
 	})
+	return i
+}
+
+func (i *InputString) Convert(fn StringConverter) *InputString {
+	i.converter = fn
 	return i
 }
 
