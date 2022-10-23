@@ -241,6 +241,44 @@ func (t Typed) StringIf(key string) (string, bool) {
 	return "", false
 }
 
+func (t Typed) Bytes(key string) []byte {
+	return t.BytesOr(key, nil)
+}
+
+// Returns a []byte at the key, or the specified
+// value if it doesn't exist or isn't a []byte
+func (t Typed) BytesOr(key string, d []byte) []byte {
+	if value, exists := t.BytesIf(key); exists {
+		return value
+	}
+	return d
+}
+
+// Returns an []byte or panics
+func (t Typed) BytesMust(key string) []byte {
+	s, exists := t.BytesIf(key)
+	if exists == false {
+		panic("expected []byte value for " + key)
+	}
+	return s
+}
+
+// Returns an []byte at the key and whether
+// or not the key existed and the value was an string
+func (t Typed) BytesIf(key string) ([]byte, bool) {
+	value, exists := t[key]
+	if exists == false {
+		return nil, false
+	}
+	switch t := value.(type) {
+	case []byte:
+		return t, true
+	case string:
+		return []byte(t), true
+	}
+	return nil, false
+}
+
 func (t Typed) Time(key string) time.Time {
 	return t.TimeOr(key, time.Now())
 }
@@ -786,39 +824,6 @@ func (t Typed) StringObject(key string) map[string]Typed {
 		m[k] = Typed(value.(map[string]any))
 	}
 	return m
-}
-
-// Marhals the type into a []byte.
-// If key isn't valid, KeyNotFound is returned.
-// If the typed doesn't represent valid JSON, a relevant
-// JSON error is returned
-func (t Typed) ToBytes(key string) ([]byte, error) {
-	var o any
-	if len(key) == 0 {
-		o = t
-	} else {
-		exists := false
-		o, exists = t[key]
-		if exists == false {
-			return nil, KeyNotFound
-		}
-	}
-	if o == nil {
-		return nil, nil
-	}
-	data, err := json.Marshal(o)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func (t Typed) MustBytes(key string) []byte {
-	data, err := t.ToBytes(key)
-	if err != nil {
-		panic(err)
-	}
-	return data
 }
 
 func (t Typed) Exists(key string) bool {

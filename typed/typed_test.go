@@ -163,6 +163,32 @@ func Test_String(t *testing.T) {
 	t.FailNow()
 }
 
+func Test_Bytes(t *testing.T) {
+	typed := New(build("host", "localhost", "nope", 1, "yes", []byte{9, 88}))
+	assert.Bytes(t, typed.Bytes("host"), []byte("localhost"))
+	assert.Bytes(t, typed.Bytes("yes"), []byte{9, 88})
+	assert.Bytes(t, typed.BytesOr("host", []byte{1, 9}), []byte("localhost"))
+	value, exists := typed.BytesIf("host")
+	assert.Bytes(t, value, []byte("localhost"))
+	assert.True(t, exists)
+
+	assert.True(t, typed.Bytes("other") == nil)
+	assert.Bytes(t, typed.BytesOr("other", []byte{1, 9}), []byte{1, 9})
+	value, exists = typed.BytesIf("other")
+	assert.True(t, value == nil)
+	assert.False(t, exists)
+
+	value, exists = typed.BytesIf("nope")
+	assert.True(t, value == nil)
+	assert.False(t, exists)
+
+	assert.Bytes(t, typed.BytesMust("host"), []byte("localhost"))
+
+	defer mustTest(t, "expected []byte value for fail")
+	typed.BytesMust("fail")
+	t.FailNow()
+}
+
 func Test_Object(t *testing.T) {
 	typed := New(build("server", build("port", 32), "nope", "a"))
 	assert.Equal(t, typed.Object("server").Int("port"), 32)
@@ -410,44 +436,6 @@ func Test_StringObject(t *testing.T) {
 
 	m = typed.StringObject("other")
 	assert.Equal(t, len(m), 0)
-}
-
-func Test_ToBytes(t *testing.T) {
-	typed, _ := JsonString(`{"atreides":{"leto":{"sister": "ghanima"}}, "goku": {"power": 9001}}`)
-	m, err := typed.ToBytes("goku")
-	assert.Nil(t, err)
-	assert.Equal(t, string(m), `{"power":9001}`)
-}
-
-func Test_ToBytesNullHandling(t *testing.T) {
-	typed, _ := JsonString(`{"atreides":null}`)
-	m, err := typed.ToBytes("atreides")
-	assert.Nil(t, err)
-	assert.Equal(t, len(m), 0)
-}
-
-func Test_MustBytes(t *testing.T) {
-	typed, _ := JsonString(`{"atreides":{"leto":{"sister": "ghanima"}}, "goku": {"power": 9001}}`)
-	m := typed.MustBytes("goku")
-	assert.Equal(t, string(m), `{"power":9001}`)
-
-	defer mustTest(t, "Key not found")
-	typed.MustBytes("hi")
-	t.FailNow()
-}
-
-func Test_ToBytesSelf(t *testing.T) {
-	typed, _ := JsonString(`{"atreides":{"leto":{"sister": "ghanima"}}, "goku": {"power": 9001}}`)
-	m, err := typed.Object("atreides").ToBytes("")
-	assert.Nil(t, err)
-	assert.Equal(t, string(m), `{"leto":{"sister":"ghanima"}}`)
-}
-
-func Test_ToBytesNotFound(t *testing.T) {
-	typed, _ := JsonString(`{"atreides":{"leto":{"sister": "ghanima"}}, "goku": {"power": 9001}}`)
-	m, err := typed.ToBytes("other")
-	assert.Error(t, err, KeyNotFound)
-	assert.Equal(t, string(m), "")
 }
 
 func Test_Exists(t *testing.T) {
