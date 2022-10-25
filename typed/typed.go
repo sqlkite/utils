@@ -308,15 +308,19 @@ func (t Typed) TimeIf(key string) (time.Time, bool) {
 	if exists == false {
 		return time.Time{}, false
 	}
-	if n, ok := value.(time.Time); ok {
+	switch n := value.(type) {
+	case time.Time:
 		return n, true
-	}
-	if n, ok := value.(string); ok {
+	case string:
 		if t, err := time.Parse(time.RFC3339, n); err != nil {
 			return time.Time{}, false
 		} else {
 			return t, true
 		}
+	case int:
+		return time.Unix(int64(n), 0).UTC(), true
+	case int64:
+		return time.Unix(n, 0).UTC(), true
 	}
 	return time.Time{}, false
 }

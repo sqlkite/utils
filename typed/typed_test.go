@@ -469,8 +469,8 @@ func Test_Map(t *testing.T) {
 }
 
 func Test_Time(t *testing.T) {
-	now := time.Now().UTC()
 	zero := time.Time{}
+	now := time.Now().UTC()
 	typed := New(build("ts", now, "nope", true))
 	assert.Equal(t, typed.Time("ts"), now)
 	assert.Equal(t, typed.TimeOr("ts", zero), now)
@@ -496,9 +496,36 @@ func Test_Time(t *testing.T) {
 }
 
 func Test_Time_String(t *testing.T) {
-	now := time.Now().UTC().Truncate(time.Second)
 	zero := time.Time{}
+	now := time.Now().UTC().Truncate(time.Second)
 	typed := New(build("ts", now.Format(time.RFC3339), "nope", true))
+	assert.Equal(t, typed.Time("ts"), now)
+	assert.Equal(t, typed.TimeOr("ts", zero), now)
+	assert.Equal(t, typed.TimeOr("other", zero), zero)
+
+	ts, exists := typed.TimeIf("ts")
+	assert.Equal(t, ts, now)
+	assert.True(t, exists)
+
+	ts, exists = typed.TimeIf("other")
+	assert.Equal(t, ts, zero)
+	assert.False(t, exists)
+
+	ts, exists = typed.TimeIf("nope")
+	assert.Equal(t, ts, zero)
+	assert.False(t, exists)
+
+	assert.Equal(t, typed.TimeMust("ts"), now)
+
+	defer mustTest(t, "expected time.Time value for other")
+	typed.TimeMust("other")
+	t.FailNow()
+}
+
+func Test_Time_Int(t *testing.T) {
+	zero := time.Time{}
+	now := time.Now().UTC().Truncate(time.Second)
+	typed := New(build("ts", now.Unix(), "nope", true))
 	assert.Equal(t, typed.Time("ts"), now)
 	assert.Equal(t, typed.TimeOr("ts", zero), now)
 	assert.Equal(t, typed.TimeOr("other", zero), zero)
