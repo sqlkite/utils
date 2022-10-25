@@ -95,6 +95,26 @@ func (c Conn) RowToMap(sql string, args ...any) (typed.Typed, error) {
 	return typed.Typed(m), err
 }
 
+func (c Conn) RowsToMap(sql string, args ...any) ([]typed.Typed, error) {
+	rows := c.Rows(sql, args...)
+	defer rows.Close()
+
+	t := make([]typed.Typed, 0, 10)
+	for rows.Next() {
+		m, err := rows.Stmt.Map()
+		if err != nil {
+			return nil, err
+		}
+		t = append(t, typed.Typed(m))
+	}
+
+	if err := rows.Error(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
 func (c Conn) IsNotFound(err error) bool {
 	return err == ErrNoRows
 }

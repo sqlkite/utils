@@ -146,6 +146,24 @@ func (db DB) RowToMap(sql string, args ...any) (typed.Typed, error) {
 	return typed.Typed(rowToMapTransform(slice[0])), nil
 }
 
+func (db DB) RowsToMap(sql string, args ...any) ([]typed.Typed, error) {
+	rows, err := db.Query(context.Background(), sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	slice, err := pgx.CollectRows(rows, pgx.RowToMap)
+	if len(slice) == 0 {
+		return nil, nil
+	}
+
+	t := make([]typed.Typed, len(slice))
+	for i, slice := range slice {
+		t[i] = typed.Typed(rowToMapTransform(slice))
+	}
+	return t, nil
+}
+
 func (db DB) IsNotFound(err error) bool {
 	return err == ErrNoRows
 }

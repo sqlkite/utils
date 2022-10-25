@@ -82,6 +82,30 @@ func Test_Conn_RowToMap(t *testing.T) {
 	})
 }
 
+func Test_Conn_RowsToMap(t *testing.T) {
+	testConn(func(conn Conn) {
+		m, err := conn.RowsToMap("select 1 where false")
+		assert.Nil(t, err)
+		assert.Equal(t, len(m), 0)
+
+		m, err = conn.RowsToMap(`
+			select 1 as a, 'b' as b
+			union all
+			select 2 as a, 'bee' as b
+	`)
+		assert.Nil(t, err)
+		assert.Equal(t, len(m), 2)
+
+		row := m[0]
+		assert.Equal(t, row.Int("a"), 1)
+		assert.Equal(t, row.String("b"), "b")
+
+		row = m[1]
+		assert.Equal(t, row.Int("a"), 2)
+		assert.Equal(t, row.String("b"), "bee")
+	})
+}
+
 func testConn(fn func(Conn)) {
 	conn, err := New(":memory:", false)
 	if err != nil {

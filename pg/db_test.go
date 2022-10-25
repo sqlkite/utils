@@ -103,5 +103,28 @@ func Test_DB_RowToMap(t *testing.T) {
 	assert.Equal(t, m.Int("a"), 1)
 	assert.Equal(t, m.String("b"), "b")
 	assert.Equal(t, m.String("uuid"), "1200783b-3463-4a98-a527-fc61b6ac32f2")
+}
 
+func Test_DB_RowsToMap(t *testing.T) {
+	m, err := db.RowsToMap("select 1 where false")
+	assert.Nil(t, err)
+	assert.Equal(t, len(m), 0)
+
+	m, err = db.RowsToMap(`
+			select 1 as a, 'b' as b, '1200783b-3463-4a98-a527-fc61b6ac32f2'::uuid as uuid
+			union all
+			select 2 as a, 'bee' as b, '0541242E-DE39-426B-8E71-BF12D00035FF'::uuid as uuid
+	`)
+	assert.Nil(t, err)
+	assert.Equal(t, len(m), 2)
+
+	row := m[0]
+	assert.Equal(t, row.Int("a"), 1)
+	assert.Equal(t, row.String("b"), "b")
+	assert.Equal(t, row.String("uuid"), "1200783b-3463-4a98-a527-fc61b6ac32f2")
+
+	row = m[1]
+	assert.Equal(t, row.Int("a"), 2)
+	assert.Equal(t, row.String("b"), "bee")
+	assert.Equal(t, row.String("uuid"), "0541242e-de39-426b-8e71-bf12d00035ff")
 }
