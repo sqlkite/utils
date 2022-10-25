@@ -280,7 +280,7 @@ func (t Typed) BytesIf(key string) ([]byte, bool) {
 }
 
 func (t Typed) Time(key string) time.Time {
-	return t.TimeOr(key, time.Now())
+	return t.TimeOr(key, time.Time{})
 }
 
 // Returns a time at the key, or the specified
