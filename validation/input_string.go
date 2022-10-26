@@ -7,10 +7,12 @@ import (
 )
 
 type StringValidator interface {
+	Clone(field string) StringValidator
 	Validate(value string, rest typed.Typed, res *Result) string
 }
 
 type StringConverter func(field string, value string, input typed.Typed, res *Result) any
+type StringFuncValidator func(field string, value string, input typed.Typed, res *Result) string
 
 func String(field string) *InputString {
 	return &InputString{
@@ -28,6 +30,23 @@ type InputString struct {
 	validators  []StringValidator
 	errType     InvalidField
 	errRequired InvalidField
+}
+
+func (i *InputString) Clone(field string) *InputString {
+	validators := make([]StringValidator, len(i.validators))
+	for i, validator := range i.validators {
+		validators[i] = validator.Clone(field)
+	}
+
+	return &InputString{
+		field:       field,
+		dflt:        i.dflt,
+		required:    i.required,
+		converter:   i.converter,
+		validators:  validators,
+		errType:     inputError(field, InvalidStringType, nil),
+		errRequired: inputError(field, Required, nil),
+	}
 }
 
 func (i *InputString) validate(input typed.Typed, res *Result) {
@@ -68,27 +87,18 @@ func (i *InputString) Default(value string) *InputString {
 }
 
 func (i *InputString) Length(min int, max int) *InputString {
-	i.validators = append(i.validators, StringLen{
-		min: min,
-		max: max,
-		err: inputError(i.field, InvalidStringLength, Range(min, max), min, max),
-	})
+	i.validators = append(i.validators, newStringLen(i.field, min, max))
 	return i
 }
 
 func (i *InputString) Pattern(pattern string) *InputString {
-	i.validators = append(i.validators, StringPattern{
-		pattern: regexp.MustCompile(pattern),
-		err:     inputError(i.field, InvalidStringPattern, nil),
-	})
+	re := regexp.MustCompile(pattern)
+	i.validators = append(i.validators, newStringPattern(i.field, re))
 	return i
 }
 
-func (i *InputString) Func(fn func(field string, value string, input typed.Typed, res *Result) string) *InputString {
-	i.validators = append(i.validators, StringFunc{
-		fn:    fn,
-		field: i.field,
-	})
+func (i *InputString) Func(fn StringFuncValidator) *InputString {
+	i.validators = append(i.validators, newStringFunc(i.field, fn))
 	return i
 }
 
@@ -101,6 +111,18 @@ type StringLen struct {
 	min int
 	max int
 	err InvalidField
+}
+
+func newStringLen(field string, min int, max int) StringLen {
+	return StringLen{
+		min: min,
+		max: max,
+		err: inputError(field, InvalidStringLength, Range(min, max), min, max),
+	}
+}
+
+func (v StringLen) Clone(field string) StringValidator {
+	return newStringLen(field, v.min, v.max)
 }
 
 func (v StringLen) Validate(value string, rest typed.Typed, res *Result) string {
@@ -118,6 +140,17 @@ type StringPattern struct {
 	err     InvalidField
 }
 
+func newStringPattern(field string, pattern *regexp.Regexp) StringPattern {
+	return StringPattern{
+		pattern: pattern,
+		err:     inputError(field, InvalidStringPattern, nil),
+	}
+}
+
+func (v StringPattern) Clone(field string) StringValidator {
+	return newStringPattern(field, v.pattern)
+}
+
 func (v StringPattern) Validate(value string, rest typed.Typed, res *Result) string {
 	if !v.pattern.MatchString(value) {
 		res.add(v.err)
@@ -128,6 +161,16 @@ func (v StringPattern) Validate(value string, rest typed.Typed, res *Result) str
 type StringFunc struct {
 	field string
 	fn    func(string, string, typed.Typed, *Result) string
+}
+
+func newStringFunc(field string, fn StringFuncValidator) StringFunc {
+	return StringFunc{
+		fn:    fn,
+		field: field,
+	}
+}
+func (v StringFunc) Clone(field string) StringValidator {
+	return newStringFunc(field, v.fn)
 }
 
 func (v StringFunc) Validate(value string, rest typed.Typed, res *Result) string {

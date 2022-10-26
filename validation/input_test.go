@@ -9,31 +9,38 @@ import (
 )
 
 func Test_String_Required(t *testing.T) {
+	f1 := String("name")
+	f2 := String("code").Required()
 	i := Input().
-		Field(String("name")).
-		Field(String("code").Required())
+		Field(f1).Field(f1.Clone("name_clone")).
+		Field(f2).Field(f2.Clone("code_clone"))
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("name").
-		Field("code", Required)
+		FieldsHaveNoErrors("name", "name_clone").
+		Field("code", Required).
+		Field("code_clone", Required)
 
-	_, res = testInput(i, "code", "1")
+	_, res = testInput(i, "code", "1", "code_clone", "1")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("code", "name")
+		FieldsHaveNoErrors("code", "name", "code_clone", "name_clone")
 }
 
 func Test_String_Default(t *testing.T) {
+	f1 := String("a").Default("leto")
+	f2 := String("b").Required().Default("leto")
 	i := Input().
-		Field(String("a").Default("leto")).
-		Field(String("b").Required().Default("leto"))
+		Field(f1).Field(f1.Clone("a_clone")).
+		Field(f2).Field(f2.Clone("b_clone"))
 
 	// default doesn't really make sense with required, required
 	// takes precedence
 	data, res := testInput(i)
 	assert.Equal(t, data.String("a"), "leto")
+	assert.Equal(t, data.String("a_clone"), "leto")
 	assert.Validation(t, res).
-		Field("b", Required)
+		Field("b", Required).
+		Field("b_clone", Required)
 }
 
 func Test_String_Type(t *testing.T) {
@@ -46,89 +53,106 @@ func Test_String_Type(t *testing.T) {
 }
 
 func Test_String_Length(t *testing.T) {
+	f1 := String("f1").Length(0, 3)
+	f2 := String("f2").Length(2, 0)
+	f3 := String("f3").Length(2, 4)
 	i := Input().
-		Field(String("f1").Length(0, 3)).
-		Field(String("f2").Length(2, 0)).
-		Field(String("f3").Length(2, 4))
+		Field(f1).Field(f1.Clone("f1_clone")).
+		Field(f2).Field(f2.Clone("f2_clone")).
+		Field(f3).Field(f3.Clone("f3_clone"))
 
-	_, res := testInput(i, "f1", "1234", "f2", "1", "f3", "1")
+	_, res := testInput(i, "f1", "1234", "f2", "1", "f3", "1", "f1_clone", "1234", "f2_clone", "1", "f3_clone", "1")
 	assert.Validation(t, res).
 		Field("f1", InvalidStringLength, map[string]any{"min": 0, "max": 3}).
 		Field("f2", InvalidStringLength, map[string]any{"min": 2, "max": 0}).
-		Field("f3", InvalidStringLength, map[string]any{"min": 2, "max": 4})
+		Field("f3", InvalidStringLength, map[string]any{"min": 2, "max": 4}).
+		Field("f1_clone", InvalidStringLength, map[string]any{"min": 0, "max": 3}).
+		Field("f2_clone", InvalidStringLength, map[string]any{"min": 2, "max": 0}).
+		Field("f3_clone", InvalidStringLength, map[string]any{"min": 2, "max": 4})
 
-	_, res = testInput(i, "f1", "123", "f2", "12", "f3", "12345")
+	_, res = testInput(i, "f1", "123", "f2", "12", "f3", "12345", "f1_clone", "123", "f2_clone", "12", "f3_clone", "12345")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f1", "f2").
-		Field("f3", InvalidStringLength, map[string]any{"min": 2, "max": 4})
+		FieldsHaveNoErrors("f1", "f2", "f1_clone", "f2_clone").
+		Field("f3", InvalidStringLength, map[string]any{"min": 2, "max": 4}).
+		Field("f3_clone", InvalidStringLength, map[string]any{"min": 2, "max": 4})
 
-	_, res = testInput(i, "f1", "1", "f2", "123456677", "f3", "12")
+	_, res = testInput(i, "f1", "1", "f2", "123456677", "f3", "12", "f1_clone", "1", "f2_clone", "123456677", "f3_clone", "12")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f1", "f2", "f3")
+		FieldsHaveNoErrors("f1", "f2", "f3", "f1_clone", "f2_clone", "f3_clone")
 
-	_, res = testInput(i, "f3", "1234")
+	_, res = testInput(i, "f3", "1234", "f3_clone", "1234")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f3")
+		FieldsHaveNoErrors("f3", "f3_clone")
 
-	_, res = testInput(i, "f3", "123")
+	_, res = testInput(i, "f3", "123", "f3_clone", "123")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f3")
+		FieldsHaveNoErrors("f3", "f3_clone")
 }
 
 func Test_String_Pattern(t *testing.T) {
+	f1 := String("f").Pattern("\\d.")
 	i := Input().
-		Field(String("f").Pattern("\\d."))
+		Field(f1).Field(f1.Clone("f_clone"))
 
-	_, res := testInput(i, "f", "1d")
+	_, res := testInput(i, "f", "1d", "f_clone", "1d")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f")
+		FieldsHaveNoErrors("f", "f_clone")
 
-	_, res = testInput(i, "f", "1")
+	_, res = testInput(i, "f", "1", "f_clone", "1")
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil)
+		Field("f", InvalidStringPattern, nil).
+		Field("f_clone", InvalidStringPattern, nil)
 }
 
 func Test_String_Func(t *testing.T) {
-	i := Input().
-		Field(String("f").Func(func(field string, value string, input typed.Typed, res *Result) string {
-			if value == "a" {
-				return "a1"
-			}
-			res.add(inputError(field, InvalidStringPattern, nil))
-			return value
-		}))
+	f1 := String("f").Func(func(field string, value string, input typed.Typed, res *Result) string {
+		if value == "a" {
+			return "a1"
+		}
+		res.add(inputError(field, InvalidStringPattern, nil))
+		return value
+	})
 
-	data, res := testInput(i, "f", "a")
+	i := Input().Field(f1).Field(f1.Clone("f_clone"))
+
+	data, res := testInput(i, "f", "a", "f_clone", "a")
 	assert.Equal(t, data.String("f"), "a1")
+	assert.Equal(t, data.String("f_clone"), "a1")
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f")
+		FieldsHaveNoErrors("f", "f_clone")
 
-	data, res = testInput(i, "f", "b")
+	data, res = testInput(i, "f", "b", "f_clone", "b")
 	assert.Equal(t, data.String("f"), "b")
+	assert.Equal(t, data.String("f_clone"), "b")
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil)
+		Field("f", InvalidStringPattern, nil).
+		Field("f_clone", InvalidStringPattern, nil)
 }
 
 func Test_String_Converter(t *testing.T) {
-	i := Input().
-		Field(String("f").Convert(func(field string, value string, input typed.Typed, res *Result) any {
-			b, err := hex.DecodeString(value)
-			if err == nil {
-				return b
-			}
-			res.add(inputError(field, InvalidStringPattern, nil))
-			return nil
-		}))
+	f1 := String("f").Convert(func(field string, value string, input typed.Typed, res *Result) any {
+		b, err := hex.DecodeString(value)
+		if err == nil {
+			return b
+		}
+		res.add(inputError(field, InvalidStringPattern, nil))
+		return nil
+	})
 
-	data, res := testInput(i, "f", "FFFe")
+	i := Input().Field(f1).Field(f1.Clone("f_clone"))
+
+	data, res := testInput(i, "f", "FFFe", "f_clone", "FFFe")
 	assert.Bytes(t, data.Bytes("f"), []byte{255, 254})
+	assert.Bytes(t, data.Bytes("f_clone"), []byte{255, 254})
 	assert.Validation(t, res).
-		FieldsHaveNoErrors("f")
+		FieldsHaveNoErrors("f", "f_clone")
 
-	data, res = testInput(i, "f", "z")
+	data, res = testInput(i, "f", "z", "f_clone", "z")
 	assert.True(t, data.Bytes("f") == nil)
+	assert.True(t, data.Bytes("f_clone") == nil)
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil)
+		Field("f", InvalidStringPattern, nil).
+		Field("f_clone", InvalidStringPattern, nil)
 }
 
 func Test_Int_Required(t *testing.T) {
