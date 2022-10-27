@@ -32,13 +32,17 @@ type KvLogger struct {
 	multiUseLen uint64
 }
 
+func NewKvLogger(maxSize uint32, out io.Writer, pool *Pool) *KvLogger {
+	return &KvLogger{
+		out:    out,
+		pool:   pool,
+		buffer: make([]byte, maxSize),
+	}
+}
+
 func KvFactory(maxSize uint32, out io.Writer) Factory {
 	return func(pool *Pool) Logger {
-		return &KvLogger{
-			out:    out,
-			pool:   pool,
-			buffer: make([]byte, maxSize),
-		}
+		return NewKvLogger(maxSize, out, pool)
 	}
 }
 
