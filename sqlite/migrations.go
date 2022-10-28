@@ -1,6 +1,10 @@
 package sqlite
 
-import "fmt"
+import (
+	"fmt"
+
+	"src.goblgobl.com/utils/log"
+)
 
 type Migrate func(conn Conn) error
 
@@ -15,6 +19,7 @@ func MigrateAll(conn Conn, migrations []Migration) error {
 		return err
 	}
 
+	log.Info("migration_check_start").String("storage", "sqlite").Int("installed_version", latestVersion).Log()
 	for _, migration := range migrations {
 		version := int(migration.Version)
 		if version <= latestVersion {
@@ -32,9 +37,12 @@ func MigrateAll(conn Conn, migrations []Migration) error {
 		})
 
 		if err != nil {
+			log.Error("migration_fail").Int("version", version).Err(err).Log()
 			return err
 		}
+		log.Info("migration_applied").Int("version", version).Log()
 	}
+	log.Info("migration_check_end").Log()
 
 	return nil
 }

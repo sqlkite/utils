@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"src.goblgobl.com/utils/log"
 )
 
 type Migrate func(tx pgx.Tx) error
@@ -20,6 +21,7 @@ func MigrateAll(db DB, appName string, migrations []Migration) error {
 		return err
 	}
 
+	log.Info("migration_check_start").String("app", appName).String("storage", "postgres").Int("installed_version", latestVersion).Log()
 	for _, migration := range migrations {
 		version := int(migration.Version)
 		if version <= latestVersion {
@@ -40,9 +42,13 @@ func MigrateAll(db DB, appName string, migrations []Migration) error {
 		})
 
 		if err != nil {
+			log.Error("migration_fail").Int("version", version).Err(err).Log()
 			return err
 		}
+		log.Info("migration_applied").Int("version", version).Log()
 	}
+
+	log.Info("migration_check_end").Log()
 
 	return nil
 }
