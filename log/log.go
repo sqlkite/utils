@@ -5,14 +5,18 @@ import (
 	"os"
 )
 
-var globalPool *Pool
+var (
+	Out io.Writer = os.Stderr
+
+	globalPool *Pool
+)
 
 func init() {
 	// Under normal cirumstances, we expect the application to setup the pool
 	// object early in the startup sequence, but we'll configure a default one
 	// incase it's needed before the app has the chane to configure it (e.g. if the
 	// app fails to read the configuration file)
-	globalPool = NewPool(1, INFO, KvFactory(2048, os.Stderr), nil)
+	globalPool = NewPool(1, INFO, KvFactory(2048), nil)
 }
 
 func Checkout() Logger {

@@ -8,8 +8,6 @@ import (
 )
 
 type KvLogger struct {
-	out io.Writer
-
 	// the position in buffer to write to next
 	pos uint64
 
@@ -32,17 +30,16 @@ type KvLogger struct {
 	multiUseLen uint64
 }
 
-func NewKvLogger(maxSize uint32, out io.Writer, pool *Pool) *KvLogger {
+func NewKvLogger(maxSize uint32, pool *Pool) *KvLogger {
 	return &KvLogger{
-		out:    out,
 		pool:   pool,
 		buffer: make([]byte, maxSize),
 	}
 }
 
-func KvFactory(maxSize uint32, out io.Writer) Factory {
+func KvFactory(maxSize uint32) Factory {
 	return func(pool *Pool) Logger {
-		return NewKvLogger(maxSize, out, pool)
+		return NewKvLogger(maxSize, pool)
 	}
 }
 
@@ -103,7 +100,7 @@ func (l *KvLogger) Err(err error) Logger {
 
 // Write the log to our globally configured writer
 func (l *KvLogger) Log() {
-	l.LogTo(l.out)
+	l.LogTo(Out)
 }
 
 func (l *KvLogger) LogTo(out io.Writer) {
@@ -114,7 +111,6 @@ func (l *KvLogger) LogTo(out io.Writer) {
 	// always be at least 1 space in our buffer
 	buffer[pos] = '\n'
 	out.Write(buffer[:pos+1])
-
 	if l.multiUseLen == 0 {
 		l.Release()
 	}
@@ -168,12 +164,6 @@ func (l *KvLogger) Field(field Field) Logger {
 		l.pos = pos + uint64(len(data))
 	}
 	return l
-}
-
-// Shouldn't be called. Exposed for a few tests. Would like to
-// find a better way, but who has time for that?
-func (l *KvLogger) SetOut(out io.Writer) {
-	l.out = out
 }
 
 // "starts" a new log message. Every message always contains a timestamp (t) a

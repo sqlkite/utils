@@ -2,33 +2,65 @@ package http
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/valyala/fasthttp"
+	"src.goblgobl.com/tests"
 	"src.goblgobl.com/tests/assert"
 	"src.goblgobl.com/utils/log"
 	"src.goblgobl.com/utils/typed"
 )
 
-func Test_Handler_EnvLoaderFail(t *testing.T) {
-	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, bool) {
-		conn.SetStatusCode(1)
-		return nil, false
+func Test_Handler_EnvLoader_Error(t *testing.T) {
+	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
+		return nil, nil, errors.New("env load fail")
 	}
 
 	conn := &fasthttp.RequestCtx{}
-	Handler("", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
-		assert.Fail(t, "next should not be called")
-		return nil, nil
-	})(conn)
+	logged := tests.CaptureLog(func() {
+		Handler("", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
+			assert.Fail(t, "next should not be called")
+			return nil, nil
+		})(conn)
+	})
 
-	assert.Equal(t, conn.Response.StatusCode(), 1)
+	reqLog := log.KvParse(logged)
+	assert.Equal(t, reqLog["l"], "error")
+	assert.Equal(t, reqLog["code"], "2001")
+
+	errorId := reqLog["eid"]
+	assert.Equal(t, len(errorId), 36)
+
+	res := conn.Response
+	assert.Equal(t, res.StatusCode(), 500)
+	assert.Equal(t, string(res.Header.Peek("Error-Id")), errorId)
+	assert.Equal(t, typed.Must(res.Body()).String("error_id"), errorId)
+}
+
+func Test_Handler_EnvLoader_Resposne(t *testing.T) {
+	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
+		return nil, StaticError(61, 60, ""), nil
+	}
+
+	conn := &fasthttp.RequestCtx{}
+	logged := tests.CaptureLog(func() {
+		Handler("", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
+			assert.Fail(t, "next should not be called")
+			return nil, nil
+		})(conn)
+	})
+
+	reqLog := log.KvParse(logged)
+	assert.Equal(t, reqLog["l"], "error")
+	assert.Equal(t, reqLog["code"], "60")
+
+	res := conn.Response
+	assert.Equal(t, res.StatusCode(), 61)
 }
 
 func Test_Handler_CallsHandlerWithEnv(t *testing.T) {
-	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, bool) {
-		return testEnv(200), true
+	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
+		return testEnv(200), nil, nil
 	}
 
 	conn := &fasthttp.RequestCtx{}
@@ -40,19 +72,18 @@ func Test_Handler_CallsHandlerWithEnv(t *testing.T) {
 }
 
 func Test_Handler_LogsResponse(t *testing.T) {
-	out := &strings.Builder{}
-	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, bool) {
-		e := testEnv(201)
-		e.logger = log.NewKvLogger(1024, out, nil)
-		return e, true
+	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
+		return testEnv(201), nil, nil
 	}
 
 	conn := &fasthttp.RequestCtx{}
-	Handler("test-route", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
-		return StaticNotFound(9001), nil
-	})(conn)
+	logged := tests.CaptureLog(func() {
+		Handler("test-route", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
+			return StaticNotFound(9001), nil
+		})(conn)
+	})
 
-	reqLog := log.KvParse(out.String())
+	reqLog := log.KvParse(logged)
 	assert.Equal(t, reqLog["l"], "info")
 	assert.Equal(t, reqLog["status"], "404")
 	assert.Equal(t, reqLog["route"], "test-route")
@@ -62,29 +93,32 @@ func Test_Handler_LogsResponse(t *testing.T) {
 }
 
 func Test_Server_Handler_LogsError(t *testing.T) {
-	out := &strings.Builder{}
-	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, bool) {
-		e := testEnv(202)
-		e.logger = log.NewKvLogger(1024, out, nil)
-		return e, true
+	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
+		return testEnv(202), nil, nil
 	}
 
 	conn := &fasthttp.RequestCtx{}
-	Handler("test2", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
-		return nil, errors.New("Not Over 9000!")
-	})(conn)
+	logged := tests.CaptureLog(func() {
+		Handler("test2", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
+			return nil, errors.New("Not Over 9000!")
+		})(conn)
+	})
 
 	res := conn.Response
 	assert.Equal(t, res.StatusCode(), 500)
-	reqLog := log.KvParse(out.String())
+
+	errorId := res.Header.Peek("Error-Id")
+	assert.Equal(t, len(errorId), 36)
+
+	reqLog := log.KvParse(logged)
 	assert.Equal(t, reqLog["l"], "error")
 	assert.Equal(t, reqLog["status"], "500")
 	assert.Equal(t, reqLog["route"], "test2")
-	assert.Equal(t, reqLog["res"], "45")
+	assert.Equal(t, reqLog["res"], "95")
 	assert.Equal(t, reqLog["code"], "2001")
-	assert.Equal(t, reqLog["c"], "env_handler_err")
+	assert.Equal(t, reqLog["c"], "handler")
 	assert.Equal(t, reqLog["err"], `"Not Over 9000!"`)
-	assert.Equal(t, reqLog["eid"], string(res.Header.Peek("Error-Id")))
+	assert.Equal(t, reqLog["eid"], string(errorId))
 }
 
 type TestEnv struct {
@@ -96,14 +130,13 @@ type TestEnv struct {
 func testEnv(id int) *TestEnv {
 	return &TestEnv{
 		id:     id,
-		logger: log.Noop{},
+		logger: log.NewKvLogger(1024, nil),
 	}
 }
 
 func (e *TestEnv) Release() {
 	e.released = true
 	e.logger.Release()
-
 }
 
 func (e TestEnv) RequestId() string {

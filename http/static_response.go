@@ -13,9 +13,7 @@ import (
 )
 
 var (
-	GenericServerError       = StaticServerError(utils.RES_SERVER_ERROR)
-	GenericFailedToSerialize = StaticServerError(utils.RES_SERIALIZE_STATIC)
-	InvalidJSON              = StaticError(400, utils.RES_INVALID_JSON_PAYLOAD, "invalid json payload")
+	InvalidJSON = StaticError(400, utils.RES_INVALID_JSON_PAYLOAD, "invalid json payload")
 )
 
 // We know the status/body/logData upfront (lets us optimize
@@ -44,7 +42,11 @@ func StaticError(status int, code int, error string) StaticResponse {
 		Code:  code,
 		Error: error,
 	}
-	body, _ := json.Marshal(data)
+	body, err := json.Marshal(data)
+	if err != nil {
+		// static errors should only be called at startup
+		panic(err)
+	}
 
 	logData := log.NewField().
 		Int("code", code).
@@ -61,12 +63,4 @@ func StaticError(status int, code int, error string) StaticResponse {
 
 func StaticNotFound(code int) StaticResponse {
 	return StaticError(404, code, "not found")
-}
-
-func StaticServerError(code int) StaticResponse {
-	return StaticError(500, code, "internal server error")
-}
-
-func StaticUnavailableError(code int) StaticResponse {
-	return StaticError(503, code, "service unavailable")
 }

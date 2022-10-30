@@ -36,11 +36,18 @@ func Test_Ok_Body(t *testing.T) {
 
 func Test_Ok_InvalidBody(t *testing.T) {
 	res := read(Ok(make(chan bool)))
-	assert.Equal(t, res.status, 500)
-	assert.Equal(t, res.body, `{"code":2002,"error":"internal server error"}`)
-	assert.Equal(t, res.log["res"], "45")
+
+	errorId := res.log["eid"]
+	assert.Equal(t, len(errorId), 36)
+	assert.Equal(t, res.log["res"], "95")
 	assert.Equal(t, res.log["code"], "2002")
 	assert.Equal(t, res.log["status"], "500")
+
+	assert.Equal(t, res.status, 500)
+	assert.Equal(t, res.json.Int("code"), 2002)
+	assert.Equal(t, res.json.String("error"), "internal server error")
+	assert.Equal(t, res.json.String("error_id"), errorId)
+
 }
 
 func Test_StaticNotFound(t *testing.T) {
@@ -61,22 +68,19 @@ func Test_StaticError(t *testing.T) {
 	assert.Equal(t, res.log["status"], "511")
 }
 
-func Test_StaticServerError(t *testing.T) {
-	res := read(StaticServerError(198484))
+func Test_ServerError(t *testing.T) {
+	res := read(ServerError())
 	assert.Equal(t, res.status, 500)
-	assert.Equal(t, res.body, `{"code":198484,"error":"internal server error"}`)
-	assert.Equal(t, res.log["res"], "47")
-	assert.Equal(t, res.log["code"], "198484")
-	assert.Equal(t, res.log["status"], "500")
-}
+	assert.Equal(t, res.json.Int("code"), 2001)
+	assert.Equal(t, res.json.String("error"), "internal server error")
 
-func Test_StaticUnavailableError(t *testing.T) {
-	res := read(StaticUnavailableError(7571))
-	assert.Equal(t, res.status, 503)
-	assert.Equal(t, res.body, `{"code":7571,"error":"service unavailable"}`)
-	assert.Equal(t, res.log["res"], "43")
-	assert.Equal(t, res.log["code"], "7571")
-	assert.Equal(t, res.log["status"], "503")
+	errorId := res.json.String("error_id")
+	assert.Equal(t, len(errorId), 36)
+
+	assert.Equal(t, res.log["res"], "95")
+	assert.Equal(t, res.log["code"], "2001")
+	assert.Equal(t, res.log["status"], "500")
+	assert.Equal(t, res.log["eid"], errorId)
 }
 
 func Test_Validation(t *testing.T) {
@@ -88,7 +92,7 @@ func Test_Validation(t *testing.T) {
 
 	res := read(Validation(result))
 	assert.Equal(t, res.status, 400)
-	assert.Equal(t, res.json.Int("code"), 2005)
+	assert.Equal(t, res.json.Int("code"), 2004)
 	assert.Equal(t, res.json.String("error"), "invalid data")
 
 	invalid := res.json.Objects("invalid")
@@ -114,7 +118,7 @@ func Test_Validation(t *testing.T) {
 	assert.Equal(t, invalid[3].Object("data").Int("over"), 9000)
 
 	assert.Equal(t, res.log["res"], "262")
-	assert.Equal(t, res.log["code"], "2005")
+	assert.Equal(t, res.log["code"], "2004")
 	assert.Equal(t, res.log["status"], "400")
 }
 

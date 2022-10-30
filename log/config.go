@@ -1,7 +1,6 @@
 package log
 
 import (
-	"os"
 	"strings"
 
 	"src.goblgobl.com/utils"
@@ -46,7 +45,7 @@ func Configure(config Config) error {
 		if maxSize == 0 {
 			maxSize = 4096
 		}
-		factory = KvFactory(maxSize, os.Stderr)
+		factory = KvFactory(maxSize)
 		formatName = "KV" // reset this incase it was empty
 	default:
 		return Errf(utils.ERR_INVALID_LOG_FORMAT, "log.format is invalid. Should be one of: kv")

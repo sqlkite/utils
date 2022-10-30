@@ -12,31 +12,31 @@ import (
 
 func Test_KvLogger_Int(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 
-	l.Info("i").Int("ms", 0).Log()
+	l.Info("i").Int("ms", 0).LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ms": "0"})
 
-	l.Info("i").Int("count", 32).String("x", "b").Log()
+	l.Info("i").Int("count", 32).String("x", "b").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"count": "32", "x": "b"})
 
-	l.Warn("i").Int("ms", -99).Log()
+	l.Warn("i").Int("ms", -99).LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ms": "-99"})
 }
 
 func Test_KvLogger_Error(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
-	l.Warn("w").Err(errors.New("test_error")).Log()
+	l := KvFactory(128)(nil)
+	l.Warn("w").Err(errors.New("test_error")).LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"err": "test_error"})
 }
 
 func Test_KvLogger_StructuredError_NoData(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 	se := Err(299, errors.New("test_error"))
 
-	l.Warn("w").Err(se).Log()
+	l.Warn("w").Err(se).LogTo(out)
 	assertKvLog(t, out, false, map[string]string{
 		"code": "299",
 		"err":  "test_error",
@@ -45,10 +45,10 @@ func Test_KvLogger_StructuredError_NoData(t *testing.T) {
 
 func Test_KvLogger_StructuredError_Data(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 	se := Err(311, errors.New("test_error2")).String("a", "z").Int("zero", 0)
 
-	l.Warn("w").Err(se).Log()
+	l.Warn("w").Err(se).LogTo(out)
 	assertKvLog(t, out, false, map[string]string{
 		"a":    "z",
 		"zero": "0",
@@ -59,9 +59,9 @@ func Test_KvLogger_StructuredError_Data(t *testing.T) {
 
 func Test_KvLogger_Timestamp(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 
-	l.Info("hi").Log()
+	l.Info("hi").LogTo(out)
 	fields := assertKvLog(t, out, false, nil)
 	unix, _ := strconv.Atoi(fields["t"])
 	assert.Nowish(t, time.Unix(int64(unix), 0))
@@ -70,9 +70,9 @@ func Test_KvLogger_Timestamp(t *testing.T) {
 func Test_KvLogger_UnencodedLenghts(t *testing.T) {
 	out := &strings.Builder{}
 	// info or warn messages take 23 characters + context length
-	l := KvFactory(35, out)(nil)
+	l := KvFactory(35)(nil)
 
-	l.Info("ctx1").String("a", "1").Log()
+	l.Info("ctx1").String("a", "1").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": "1"})
 
 	s := string(l.Info("ctx1").String("a", "1").Bytes())
@@ -80,88 +80,88 @@ func Test_KvLogger_UnencodedLenghts(t *testing.T) {
 	assert.StringContains(t, s, "c=ctx1 a=1")
 	l.Reset()
 
-	l.Info("ctx1").String("a", "12").Log()
+	l.Info("ctx1").String("a", "12").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": "12"})
 
-	l.Info("ctx1").String("a", "123").Log()
+	l.Info("ctx1").String("a", "123").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": "123"})
 
-	l.Info("ctx1").String("a", "1234").Log()
+	l.Info("ctx1").String("a", "1234").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": "1234"})
 
-	l.Info("ctx1").String("a", "12345").Log()
+	l.Info("ctx1").String("a", "12345").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": "12345"})
 
-	l.Info("ctx2").String("ab", "1").Log()
+	l.Info("ctx2").String("ab", "1").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": "1"})
 
-	l.Info("ctx2").String("ab", "12").Log()
+	l.Info("ctx2").String("ab", "12").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": "12"})
 
-	l.Info("ctx2").String("ab", "123").Log()
+	l.Info("ctx2").String("ab", "123").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": "123"})
 
-	l.Info("ctx2").String("ab", "1234").Log()
+	l.Info("ctx2").String("ab", "1234").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": "1234"})
 
-	l.Info("ctx1").String("a", "123456").Log()
+	l.Info("ctx1").String("a", "123456").LogTo(out)
 	assertNoField(t, out, "a")
 
-	l.Info("ctx1").String("ab", "12345").Log()
+	l.Info("ctx1").String("ab", "12345").LogTo(out)
 	assertNoField(t, out, "ab")
 }
 
 func Test_KvLogger_EncodedLenghts(t *testing.T) {
 	out := &strings.Builder{}
 	// info or warn messages take 23 characters + context length
-	l := KvFactory(40, out)(nil)
+	l := KvFactory(40)(nil)
 
-	l.Info("ctx1").String("a", "\"").Log()
+	l.Info("ctx1").String("a", "\"").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": `"\""`})
 
-	l.Info("ctx1").String("a", "1\"").Log()
+	l.Info("ctx1").String("a", "1\"").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": `"1\""`})
 
-	l.Info("ctx1").String("a", "1\"b").Log()
+	l.Info("ctx1").String("a", "1\"b").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": `"1\"b"`})
 
-	l.Info("ctx1").String("a", "1\"bc").Log()
+	l.Info("ctx1").String("a", "1\"bc").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": `"1\"bc"`})
 
-	l.Info("ctx1").String("a", "1\"bcd").Log()
+	l.Info("ctx1").String("a", "1\"bcd").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": `"1\"bc..."`})
 
-	l.Info("ctx1").String("a", "1\"bcde").Log()
+	l.Info("ctx1").String("a", "1\"bcde").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"a": `"1\"bc..."`})
 
-	l.Info("ctx1").String("ab", "\"").Log()
+	l.Info("ctx1").String("ab", "\"").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": `"\""`})
 
-	l.Info("ctx1").String("ab", "1\"").Log()
+	l.Info("ctx1").String("ab", "1\"").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": `"1\""`})
 
-	l.Info("ctx1").String("ab", "1\"b").Log()
+	l.Info("ctx1").String("ab", "1\"b").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": `"1\"b"`})
 
-	l.Info("ctx1").String("ab", "1\"bc").Log()
+	l.Info("ctx1").String("ab", "1\"bc").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": `"1\"b..."`})
 
-	l.Info("ctx1").String("ab", "1\"bcd").Log()
+	l.Info("ctx1").String("ab", "1\"bcd").LogTo(out)
 	assertKvLog(t, out, false, map[string]string{"ab": `"1\"b..."`})
 }
 
 func Test_KvLogger_Fixed(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 
 	l.Field(NewField().Int("power", 9001).Finalize()).Fixed()
-	l.Log()
+	l.LogTo(out)
 	assert.Equal(t, out.String(), "power=9001\n")
 
 	out.Reset()
 	l.Reset()
 
-	l.Info("x").String("a", "b").Log()
+	l.Info("x").String("a", "b").LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"l":     "info",
 		"c":     "x",
@@ -172,14 +172,14 @@ func Test_KvLogger_Fixed(t *testing.T) {
 
 func Test_KvLogger_MultiUse_Common(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 
 	l.Field(NewField().String("id", "123").Finalize()).MultiUse()
-	l.Log()
+	l.LogTo(out)
 	assert.Equal(t, out.String(), "id=123\n")
 
 	out.Reset()
-	l.Info("a").Log()
+	l.Info("a").LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"l":  "info",
 		"c":  "a",
@@ -187,7 +187,7 @@ func Test_KvLogger_MultiUse_Common(t *testing.T) {
 	})
 
 	l.Release()
-	l.Info("x").Log()
+	l.Info("x").LogTo(out)
 	fields := assertKvLog(t, out, true, map[string]string{
 		"l": "info",
 		"c": "x",
@@ -197,16 +197,16 @@ func Test_KvLogger_MultiUse_Common(t *testing.T) {
 
 func Test_Logger_FixedAndMultiUse(t *testing.T) {
 	out := &strings.Builder{}
-	l := KvFactory(128, out)(nil)
+	l := KvFactory(128)(nil)
 
 	l.Field(NewField().String("f", "one").Finalize()).Fixed()
 	l.Field(NewField().Int("m", 2).Finalize()).MultiUse()
-	l.Log()
+	l.LogTo(out)
 	assert.Equal(t, out.String(), "f=one m=2\n")
 
 	out.Reset()
 
-	l.Error("e").Log()
+	l.Error("e").LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"l": "error",
 		"c": "e",
@@ -214,7 +214,7 @@ func Test_Logger_FixedAndMultiUse(t *testing.T) {
 		"m": "2",
 	})
 
-	l.Fatal("f").Log()
+	l.Fatal("f").LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"l": "fatal",
 		"c": "f",
@@ -224,7 +224,7 @@ func Test_Logger_FixedAndMultiUse(t *testing.T) {
 
 	l.Reset()
 
-	l.Fatal("f2").Log()
+	l.Fatal("f2").LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"l": "fatal",
 		"c": "f2",

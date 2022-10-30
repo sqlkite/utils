@@ -12,8 +12,6 @@ time.
 */
 
 import (
-	"fmt"
-
 	"src.goblgobl.com/utils"
 	"src.goblgobl.com/utils/json"
 	"src.goblgobl.com/utils/log"
@@ -31,10 +29,6 @@ var (
 	OkLogData = log.NewField().
 			Int("status", 200).
 			Finalize()
-
-	// pre-serialize this because, at this point, things have
-	// gotten really bad.
-	jsonSerializeError = fmt.Sprintf(`{"code":%d,"error":"internal server error"}`, utils.RES_SERIALIZE_DYNAMIC)
 )
 
 // body isn't known until runtime, but we know the status
@@ -79,8 +73,10 @@ func Ok(data any) Response {
 	if data != nil {
 		var err error
 		if body, err = json.Marshal(data); err != nil {
-			log.Error("res_ok_json").Err(err).Log()
-			return GenericFailedToSerialize
+			se := SerializationError()
+			logger := log.Error("res_ok_json").Err(err)
+			se.EnhanceLog(logger).Log()
+			return se
 		}
 	}
 

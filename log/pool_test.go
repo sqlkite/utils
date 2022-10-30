@@ -20,31 +20,31 @@ func Test_Pool_Level(t *testing.T) {
 		l.Release()
 	}
 
-	p := NewPool(1, INFO, KvFactory(64, nil), nil)
+	p := NewPool(1, INFO, KvFactory(64), nil)
 	assertKvLogger(p.Info(""))
 	assertKvLogger(p.Warn(""))
 	assertKvLogger(p.Error(""))
 	assertKvLogger(p.Fatal(""))
 
-	p = NewPool(1, WARN, KvFactory(64, nil), nil)
+	p = NewPool(1, WARN, KvFactory(64), nil)
 	assertNoop(p.Info(""))
 	assertKvLogger(p.Warn(""))
 	assertKvLogger(p.Error(""))
 	assertKvLogger(p.Fatal(""))
 
-	p = NewPool(1, ERROR, KvFactory(64, nil), nil)
+	p = NewPool(1, ERROR, KvFactory(64), nil)
 	assertNoop(p.Info(""))
 	assertNoop(p.Warn(""))
 	assertKvLogger(p.Error(""))
 	assertKvLogger(p.Fatal(""))
 
-	p = NewPool(1, FATAL, KvFactory(64, nil), nil)
+	p = NewPool(1, FATAL, KvFactory(64), nil)
 	assertNoop(p.Info(""))
 	assertNoop(p.Warn(""))
 	assertNoop(p.Error(""))
 	assertKvLogger(p.Fatal(""))
 
-	p = NewPool(1, NONE, KvFactory(64, nil), nil)
+	p = NewPool(1, NONE, KvFactory(64), nil)
 	assertNoop(p.Info(""))
 	assertNoop(p.Warn(""))
 	assertNoop(p.Error(""))
@@ -52,7 +52,7 @@ func Test_Pool_Level(t *testing.T) {
 }
 
 func Test_Pool_Checkout(t *testing.T) {
-	p := NewPool(1, INFO, KvFactory(64, nil), nil)
+	p := NewPool(1, INFO, KvFactory(64), nil)
 
 	l1 := p.Checkout().(*KvLogger)
 	l1.Release()
@@ -64,7 +64,7 @@ func Test_Pool_Checkout(t *testing.T) {
 }
 
 func Test_Pool_Depleted(t *testing.T) {
-	p := NewPool(2, INFO, KvFactory(64, nil), nil)
+	p := NewPool(2, INFO, KvFactory(64), nil)
 	assert.Equal(t, p.Len(), 2)
 	assert.Equal(t, p.Depleted(), 0)
 
@@ -87,7 +87,7 @@ func Test_Pool_Depleted(t *testing.T) {
 }
 
 func Test_Pool_DynamicCreationWontReleaseToPool(t *testing.T) {
-	p := NewPool(1, INFO, KvFactory(64, nil), nil)
+	p := NewPool(1, INFO, KvFactory(64), nil)
 
 	l1 := p.Checkout().(*KvLogger)
 	l2 := p.Checkout().(*KvLogger)
@@ -101,10 +101,10 @@ func Test_Pool_DynamicCreationWontReleaseToPool(t *testing.T) {
 
 func Test_Pool_KvLogging(t *testing.T) {
 	out := &strings.Builder{}
-	p := NewPool(1, INFO, KvFactory(128, out), nil)
+	p := NewPool(1, INFO, KvFactory(128), nil)
 
 	l1 := p.Info("c-info").String("a", "b")
-	l1.Log()
+	l1.LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"a": "b",
 		"l": "info",
@@ -112,7 +112,7 @@ func Test_Pool_KvLogging(t *testing.T) {
 	})
 
 	l2 := p.Warn("c-warn").String("a", "b")
-	l2.Log()
+	l2.LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"a": "b",
 		"l": "warn",
@@ -120,7 +120,7 @@ func Test_Pool_KvLogging(t *testing.T) {
 	})
 
 	l3 := p.Error("c-error").String("a", "b")
-	l3.Log()
+	l3.LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"a": "b",
 		"l": "error",
@@ -128,7 +128,7 @@ func Test_Pool_KvLogging(t *testing.T) {
 	})
 
 	l4 := p.Fatal("c-fatal").String("a", "b")
-	l4.Log()
+	l4.LogTo(out)
 	assertKvLog(t, out, true, map[string]string{
 		"a": "b",
 		"l": "fatal",
