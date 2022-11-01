@@ -79,7 +79,11 @@ func Ok(data any) Response {
 			return se
 		}
 	}
+	return OkBytes(body)
 
+}
+
+func OkBytes(body []byte) DynamicResponse {
 	return DynamicResponse{
 		status:  200,
 		body:    body,

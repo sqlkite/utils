@@ -22,14 +22,13 @@ func Handler[T Env](routeName string, loadEnv func(ctx *fasthttp.RequestCtx) (T,
 		var logger log.Logger
 		env, res, err := loadEnv(conn)
 
+		header := &conn.Response.Header
+		header.SetContentTypeBytes([]byte("application/json"))
+
 		if res == nil && err == nil {
 			haveEnv = true
 			defer env.Release()
-
-			header := &conn.Response.Header
-			header.SetContentTypeBytes([]byte("application/json"))
 			header.SetBytesK([]byte("RequestId"), env.RequestId())
-
 			res, err = next(conn, env)
 		}
 
@@ -49,7 +48,30 @@ func Handler[T Env](routeName string, loadEnv func(ctx *fasthttp.RequestCtx) (T,
 		}
 
 		res.Write(conn)
+		res.EnhanceLog(logger).
+			String("route", routeName).
+			Int64("ms", time.Now().Sub(start).Milliseconds()).
+			Log()
+	}
+}
 
+func NoEnvHandler(routeName string, next func(ctx *fasthttp.RequestCtx) (Response, error)) func(ctx *fasthttp.RequestCtx) {
+	return func(conn *fasthttp.RequestCtx) {
+		start := time.Now()
+		var logger log.Logger
+
+		header := &conn.Response.Header
+		header.SetContentTypeBytes([]byte("application/json"))
+
+		res, err := next(conn)
+
+		if err == nil {
+			logger = log.Error("handler").Err(err)
+		} else {
+			logger = log.Info("handler")
+		}
+
+		res.Write(conn)
 		res.EnhanceLog(logger).
 			String("route", routeName).
 			Int64("ms", time.Now().Sub(start).Milliseconds()).
