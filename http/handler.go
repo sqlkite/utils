@@ -66,9 +66,10 @@ func NoEnvHandler(routeName string, next func(ctx *fasthttp.RequestCtx) (Respons
 		res, err := next(conn)
 
 		if err == nil {
-			logger = log.Error("handler").Err(err)
+			logger = log.Info("req")
 		} else {
-			logger = log.Info("handler")
+			res = ServerError()
+			logger = log.Error("handler").Err(err)
 		}
 
 		res.Write(conn)

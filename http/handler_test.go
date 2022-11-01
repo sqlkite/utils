@@ -37,7 +37,7 @@ func Test_Handler_EnvLoader_Error(t *testing.T) {
 	assert.Equal(t, typed.Must(res.Body()).String("error_id"), errorId)
 }
 
-func Test_Handler_EnvLoader_Resposne(t *testing.T) {
+func Test_Handler_EnvLoader_Response(t *testing.T) {
 	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
 		return nil, StaticError(61, 60, ""), nil
 	}
@@ -92,7 +92,7 @@ func Test_Handler_LogsResponse(t *testing.T) {
 	assert.Equal(t, reqLog["c"], "req")
 }
 
-func Test_Server_Handler_LogsError(t *testing.T) {
+func Test_Handler_LogsError(t *testing.T) {
 	testLoader := func(conn *fasthttp.RequestCtx) (*TestEnv, Response, error) {
 		return testEnv(202), nil, nil
 	}
@@ -100,6 +100,48 @@ func Test_Server_Handler_LogsError(t *testing.T) {
 	conn := &fasthttp.RequestCtx{}
 	logged := tests.CaptureLog(func() {
 		Handler("test2", testLoader, func(conn *fasthttp.RequestCtx, env *TestEnv) (Response, error) {
+			return nil, errors.New("Not Over 9000!")
+		})(conn)
+	})
+
+	res := conn.Response
+	assert.Equal(t, res.StatusCode(), 500)
+
+	errorId := res.Header.Peek("Error-Id")
+	assert.Equal(t, len(errorId), 36)
+
+	reqLog := log.KvParse(logged)
+	assert.Equal(t, reqLog["l"], "error")
+	assert.Equal(t, reqLog["status"], "500")
+	assert.Equal(t, reqLog["route"], "test2")
+	assert.Equal(t, reqLog["res"], "95")
+	assert.Equal(t, reqLog["code"], "2001")
+	assert.Equal(t, reqLog["c"], "handler")
+	assert.Equal(t, reqLog["err"], `"Not Over 9000!"`)
+	assert.Equal(t, reqLog["eid"], string(errorId))
+}
+
+func Test_NoEnvHandler_LogsResponse(t *testing.T) {
+	conn := &fasthttp.RequestCtx{}
+	logged := tests.CaptureLog(func() {
+		NoEnvHandler("test-route", func(conn *fasthttp.RequestCtx) (Response, error) {
+			return StaticNotFound(9001), nil
+		})(conn)
+	})
+
+	reqLog := log.KvParse(logged)
+	assert.Equal(t, reqLog["l"], "info")
+	assert.Equal(t, reqLog["status"], "404")
+	assert.Equal(t, reqLog["route"], "test-route")
+	assert.Equal(t, reqLog["res"], "33")
+	assert.Equal(t, reqLog["code"], "9001")
+	assert.Equal(t, reqLog["c"], "req")
+}
+
+func Test_NoEnvHandler_LogsError(t *testing.T) {
+	conn := &fasthttp.RequestCtx{}
+	logged := tests.CaptureLog(func() {
+		NoEnvHandler("test2", func(conn *fasthttp.RequestCtx) (Response, error) {
 			return nil, errors.New("Not Over 9000!")
 		})(conn)
 	})
