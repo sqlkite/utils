@@ -27,6 +27,10 @@ func New(m map[string]any) Typed {
 
 // Create a Typed helper from the given JSON bytes
 func Json(data []byte) (Typed, error) {
+	if data == nil {
+		return Typed{}, nil
+	}
+
 	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
 		return nil, err

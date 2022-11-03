@@ -18,6 +18,12 @@ func Test_Must(t *testing.T) {
 	t.FailNow()
 }
 
+func Test_Nil_Json(t *testing.T) {
+	typed, err := Json(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, len(typed), 0)
+}
+
 func Test_Json(t *testing.T) {
 	typed, err := Json([]byte(`{"power": 898887678118296}`))
 	assert.Equal(t, typed.Int("power"), 898887678118296)
