@@ -9,8 +9,8 @@ require (
 	github.com/valyala/fasthttp v1.41.0
 	golang.org/x/crypto v0.1.0
 	golang.org/x/sync v0.1.0
-	src.goblgobl.com/sqlite v0.0.2
-	src.goblgobl.com/tests v0.0.1
+	src.goblgobl.com/sqlite v0.0.4
+	src.goblgobl.com/tests v0.0.2
 )
 
 require (
