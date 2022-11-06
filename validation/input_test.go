@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/valyala/fasthttp"
 	"src.goblgobl.com/tests/assert"
 	"src.goblgobl.com/utils/typed"
 )
@@ -155,6 +156,12 @@ func Test_String_Converter(t *testing.T) {
 		Field("f_clone", InvalidStringPattern, nil)
 }
 
+func Test_String_Args(t *testing.T) {
+	i := Input().Field(String("name").Required().Length(4, 4))
+	_, res := testArgs(i, "name", "leto")
+	assert.Validation(t, res).FieldsHaveNoErrors("name")
+}
+
 func Test_Int_Required(t *testing.T) {
 	i := Input().
 		Field(Int("name")).
@@ -258,6 +265,15 @@ func Test_Int_Func(t *testing.T) {
 		Field("f", InvalidIntMax, nil)
 }
 
+func Test_Int_Args(t *testing.T) {
+	i := Input().Field(Int("id").Required().Range(4, 4))
+	_, res := testArgs(i, "id", "4")
+	assert.Validation(t, res).FieldsHaveNoErrors("id")
+
+	_, res = testArgs(i, "id", "nope")
+	assert.Validation(t, res).Field("id", InvalidIntType)
+}
+
 func Test_Bool_Required(t *testing.T) {
 	i := Input().
 		Field(Bool("required")).
@@ -321,6 +337,22 @@ func Test_Bool_Func(t *testing.T) {
 		Field("f", InvalidBoolType, nil)
 }
 
+func Test_Bool_Args(t *testing.T) {
+	i := Input().Field(Bool("agree").Required())
+	for _, value := range []string{"true", "TRUE", "True"} {
+		_, res := testArgs(i, "agree", value)
+		assert.Validation(t, res).FieldsHaveNoErrors("agree")
+	}
+
+	for _, value := range []string{"false", "FALSE", "False"} {
+		_, res := testArgs(i, "agree", value)
+		assert.Validation(t, res).FieldsHaveNoErrors("agree")
+	}
+
+	_, res := testArgs(i, "agree", "other")
+	assert.Validation(t, res).Field("agree", InvalidBoolType)
+}
+
 func testInput(i *input, args ...any) (typed.Typed, *Result) {
 	m := make(typed.Typed, len(args)/2)
 	for i := 0; i < len(args); i += 2 {
@@ -329,5 +361,16 @@ func testInput(i *input, args ...any) (typed.Typed, *Result) {
 
 	res := NewResult(5)
 	i.Validate(m, res)
+	return m, res
+}
+
+func testArgs(i *input, args ...string) (*fasthttp.Args, *Result) {
+	m := new(fasthttp.Args)
+	for i := 0; i < len(args); i += 2 {
+		m.Add(args[i], args[i+1])
+	}
+
+	res := NewResult(5)
+	i.ValidateArgs(m, res)
 	return m, res
 }

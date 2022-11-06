@@ -3,6 +3,7 @@ package validation
 import (
 	"regexp"
 
+	"github.com/valyala/fasthttp"
 	"src.goblgobl.com/utils/typed"
 )
 
@@ -30,6 +31,13 @@ type InputString struct {
 	validators  []StringValidator
 	errType     InvalidField
 	errRequired InvalidField
+}
+
+func (i *InputString) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	field := i.field
+	if value := args.Peek(field); value != nil {
+		t[field] = string(value)
+	}
 }
 
 func (i *InputString) Clone(field string) *InputString {

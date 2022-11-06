@@ -1,6 +1,10 @@
 package validation
 
 import (
+	"strconv"
+
+	"github.com/valyala/fasthttp"
+	"src.goblgobl.com/utils"
 	"src.goblgobl.com/utils/typed"
 )
 
@@ -23,6 +27,17 @@ type InputInt struct {
 	validators  []IntValidator
 	errType     InvalidField
 	errRequired InvalidField
+}
+
+func (i *InputInt) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	field := i.field
+	if value := args.Peek(field); value != nil {
+		if n, err := strconv.ParseInt(utils.B2S(value), 10, 0); err == nil {
+			t[field] = n
+		} else {
+			t[field] = value
+		}
+	}
 }
 
 func (i *InputInt) validate(input typed.Typed, res *Result) {

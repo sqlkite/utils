@@ -1,6 +1,8 @@
 package validation
 
 import (
+	"github.com/valyala/fasthttp"
+	"src.goblgobl.com/utils"
 	"src.goblgobl.com/utils/typed"
 )
 
@@ -24,6 +26,20 @@ type InputBool struct {
 	validators  []BoolValidator
 	errType     InvalidField
 	errRequired InvalidField
+}
+
+func (i *InputBool) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	field := i.field
+	if value := args.Peek(field); value != nil {
+		switch utils.B2S(value) {
+		case "true", "TRUE", "True":
+			t[field] = true
+		case "false", "FALSE", "False":
+			t[field] = false
+		default:
+			t[field] = value
+		}
+	}
 }
 
 func (i *InputBool) Required() *InputBool {

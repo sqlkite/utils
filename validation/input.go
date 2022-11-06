@@ -3,11 +3,13 @@ package validation
 import (
 	"fmt"
 
+	"github.com/valyala/fasthttp"
 	"src.goblgobl.com/utils/typed"
 )
 
 type InputValidator interface {
 	validate(input typed.Typed, res *Result)
+	argsToTyped(args *fasthttp.Args, dest typed.Typed)
 }
 
 func Input() *input {
@@ -29,6 +31,15 @@ func (i *input) Validate(input typed.Typed, res *Result) bool {
 		validator.validate(input, res)
 	}
 	return res.Len() == len
+}
+
+func (i *input) ValidateArgs(args *fasthttp.Args, res *Result) bool {
+	validators := i.validators
+	input := make(typed.Typed, len(validators))
+	for _, validator := range i.validators {
+		validator.argsToTyped(args, input)
+	}
+	return i.Validate(input, res)
 }
 
 func inputError(field string, meta Meta, data any, args ...any) InvalidField {
