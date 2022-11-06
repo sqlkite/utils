@@ -33,13 +33,13 @@ func (i *input) Validate(input typed.Typed, res *Result) bool {
 	return res.Len() == len
 }
 
-func (i *input) ValidateArgs(args *fasthttp.Args, res *Result) bool {
+func (i *input) ValidateArgs(args *fasthttp.Args, res *Result) (typed.Typed, bool) {
 	validators := i.validators
 	input := make(typed.Typed, len(validators))
 	for _, validator := range i.validators {
 		validator.argsToTyped(args, input)
 	}
-	return i.Validate(input, res)
+	return input, i.Validate(input, res)
 }
 
 func inputError(field string, meta Meta, data any, args ...any) InvalidField {

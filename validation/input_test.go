@@ -267,11 +267,13 @@ func Test_Int_Func(t *testing.T) {
 
 func Test_Int_Args(t *testing.T) {
 	i := Input().Field(Int("id").Required().Range(4, 4))
-	_, res := testArgs(i, "id", "4")
+	input, res := testArgs(i, "id", "4")
 	assert.Validation(t, res).FieldsHaveNoErrors("id")
+	assert.Equal(t, input.Int("id"), 4)
 
-	_, res = testArgs(i, "id", "nope")
+	input, res = testArgs(i, "id", "nope")
 	assert.Validation(t, res).Field("id", InvalidIntType)
+	assert.Equal(t, input.IntOr("id", -1), -1)
 }
 
 func Test_Bool_Required(t *testing.T) {
@@ -340,17 +342,21 @@ func Test_Bool_Func(t *testing.T) {
 func Test_Bool_Args(t *testing.T) {
 	i := Input().Field(Bool("agree").Required())
 	for _, value := range []string{"true", "TRUE", "True"} {
-		_, res := testArgs(i, "agree", value)
+		input, res := testArgs(i, "agree", value)
 		assert.Validation(t, res).FieldsHaveNoErrors("agree")
+		assert.True(t, input.Bool("agree"))
 	}
 
 	for _, value := range []string{"false", "FALSE", "False"} {
-		_, res := testArgs(i, "agree", value)
+		input, res := testArgs(i, "agree", value)
 		assert.Validation(t, res).FieldsHaveNoErrors("agree")
+		assert.False(t, input.Bool("agree"))
 	}
 
-	_, res := testArgs(i, "agree", "other")
+	input, res := testArgs(i, "agree", "other")
 	assert.Validation(t, res).Field("agree", InvalidBoolType)
+	_, isBool := input.BoolIf("agree")
+	assert.False(t, isBool)
 }
 
 func testInput(i *input, args ...any) (typed.Typed, *Result) {
@@ -364,13 +370,13 @@ func testInput(i *input, args ...any) (typed.Typed, *Result) {
 	return m, res
 }
 
-func testArgs(i *input, args ...string) (*fasthttp.Args, *Result) {
+func testArgs(i *input, args ...string) (typed.Typed, *Result) {
 	m := new(fasthttp.Args)
 	for i := 0; i < len(args); i += 2 {
 		m.Add(args[i], args[i+1])
 	}
 
 	res := NewResult(5)
-	i.ValidateArgs(m, res)
-	return m, res
+	input, _ := i.ValidateArgs(m, res)
+	return input, res
 }
