@@ -33,3 +33,25 @@ func Test_B2S(t *testing.T) {
 	assert.True(t, bytes.Equal(S2B(""), []byte{}))
 	assert.True(t, bytes.Equal(S2B("129"), []byte("129")))
 }
+
+func Test_Paging(t *testing.T) {
+	perpage, offset := Paging(0, 0, 10)
+	assert.Equal(t, offset, 0)
+	assert.Equal(t, perpage, 10)
+
+	perpage, offset = Paging(-1, -1, 11)
+	assert.Equal(t, offset, 0)
+	assert.Equal(t, perpage, 11)
+
+	perpage, offset = Paging(1, 0, 10)
+	assert.Equal(t, offset, 0)
+	assert.Equal(t, perpage, 1)
+
+	perpage, offset = Paging(10, 1, 20)
+	assert.Equal(t, offset, 0)
+	assert.Equal(t, perpage, 10)
+
+	perpage, offset = Paging(10, 2, 20)
+	assert.Equal(t, offset, 10)
+	assert.Equal(t, perpage, 10)
+}

@@ -43,3 +43,15 @@ func B2S(b []byte) string {
 	/* #nosec G103 */
 	return *(*string)(unsafe.Pointer(&b))
 }
+
+func Paging(perpage int, page int, defaultPerPage int) (int, int) {
+	if perpage < 1 {
+		perpage = defaultPerPage
+	}
+
+	if page < 1 {
+		return perpage, 0
+	}
+
+	return perpage, (page - 1) * perpage
+}
