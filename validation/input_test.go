@@ -359,6 +359,54 @@ func Test_Bool_Args(t *testing.T) {
 	assert.False(t, isBool)
 }
 
+func Test_UUID_Required(t *testing.T) {
+	f1 := String("id")
+	f2 := String("parent_id").Required()
+	i := Input().
+		Field(f1).Field(f1.Clone("id_clone")).
+		Field(f2).Field(f2.Clone("parent_id_clone"))
+
+	_, res := testInput(i)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("id", "id_clone").
+		Field("parent_id", Required).
+		Field("parent_id_clone", Required)
+
+	_, res = testInput(i, "parent_id", "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", "parent_id_clone", "00000000-0000-0000-0000-000000000000")
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("parent_id", "id", "parent_id_clone", "id_clone")
+}
+
+func Test_UUID_Default(t *testing.T) {
+	f1 := String("a").Default("leto")
+	f2 := String("b").Required().Default("leto")
+	i := Input().
+		Field(f1).Field(f1.Clone("a_clone")).
+		Field(f2).Field(f2.Clone("b_clone"))
+
+	// default doesn't really make sense with required, required
+	// takes precedence
+	data, res := testInput(i)
+	assert.Equal(t, data.String("a"), "leto")
+	assert.Equal(t, data.String("a_clone"), "leto")
+	assert.Validation(t, res).
+		Field("b", Required).
+		Field("b_clone", Required)
+}
+
+func Test_UUID_Type(t *testing.T) {
+	i := Input().
+		Field(UUID("id"))
+
+	_, res := testInput(i, "id", 3)
+	assert.Validation(t, res).
+		Field("id", InvalidUUIDType)
+
+	_, res = testInput(i, "id", "Z0000000-0000-0000-0000-00000000000Z")
+	assert.Validation(t, res).
+		Field("id", InvalidUUIDType)
+}
+
 func testInput(i *input, args ...any) (typed.Typed, *Result) {
 	m := make(typed.Typed, len(args)/2)
 	for i := 0; i < len(args); i += 2 {

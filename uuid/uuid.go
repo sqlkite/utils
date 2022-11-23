@@ -8,6 +8,11 @@ func init() {
 	uuid.EnableRandPool()
 }
 
+func IsValid(id string) bool {
+	_, err := uuid.Parse(id)
+	return err == nil
+}
+
 func String() string {
 	return uuid.Must(uuid.NewRandom()).String()
 }

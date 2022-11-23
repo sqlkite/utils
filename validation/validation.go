@@ -14,6 +14,7 @@ var (
 	InvalidIntMax        = M(utils.VAL_INT_MAX, "must be less than or equal to %d")
 	InvalidIntRange      = M(utils.VAL_INT_RANGE, "must be between %d and %d")
 	InvalidBoolType      = M(utils.VAL_BOOL_TYPE, "must be true or false")
+	InvalidUUIDType      = M(utils.VAL_UUID_TYPE, "must be a uuid")
 )
 
 func Checkout() *Result {
