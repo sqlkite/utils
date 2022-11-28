@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 // stupid test

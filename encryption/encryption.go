@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"golang.org/x/crypto/nacl/secretbox"
-	"src.goblgobl.com/utils"
+	"src.sqlkite.com/utils"
 )
 
 func Encrypt(key [32]byte, plainText string) ([]byte, error) {

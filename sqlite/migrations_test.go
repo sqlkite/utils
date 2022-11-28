@@ -3,7 +3,7 @@ package sqlite
 import (
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_MigrateAll_NormalRun(t *testing.T) {
@@ -19,7 +19,7 @@ func Test_MigrateAll_NormalRun(t *testing.T) {
 		assert.Equal(t, value, 9001)
 
 		var version int
-		rows := conn.Rows("select version from gobl_migrations order by version")
+		rows := conn.Rows("select version from sqlkite_migrations order by version")
 		defer rows.Close()
 
 		rows.Next()
@@ -53,7 +53,7 @@ func Test_MigrateAll_Error(t *testing.T) {
 		assert.Equal(t, value, 9001)
 
 		var version int
-		rows := conn.Rows("select version from gobl_migrations order by version")
+		rows := conn.Rows("select version from sqlkite_migrations order by version")
 		defer rows.Close()
 
 		rows.Next()

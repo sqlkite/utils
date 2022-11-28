@@ -3,7 +3,7 @@ package sqlite
 import (
 	"fmt"
 
-	"src.goblgobl.com/utils/log"
+	"src.sqlkite.com/utils/log"
 )
 
 type Migrate func(conn Conn) error
@@ -32,7 +32,7 @@ func MigrateAll(conn Conn, migrations []Migration) error {
 			}
 
 			return conn.Exec(`
-				insert into gobl_migrations (version) values (?1)
+				insert into sqlkite_migrations (version) values (?1)
 			`, version)
 		})
 
@@ -48,14 +48,14 @@ func MigrateAll(conn Conn, migrations []Migration) error {
 }
 
 func GetCurrentMigrationVersion(conn Conn) (int, error) {
-	exists, err := conn.TableExists("gobl_migrations")
+	exists, err := conn.TableExists("sqlkite_migrations")
 	if err != nil {
 		return 0, err
 	}
 
 	if !exists {
 		return 0, conn.Exec(`
-			create table gobl_migrations (
+			create table sqlkite_migrations (
 				version integer not null
 			)
 		`)
@@ -63,6 +63,6 @@ func GetCurrentMigrationVersion(conn Conn) (int, error) {
 
 	return Scalar[int](conn, `
 		select max(version)
-		from gobl_migrations
+		from sqlkite_migrations
 	`)
 }

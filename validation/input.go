@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/valyala/fasthttp"
-	"src.goblgobl.com/utils/typed"
+	"src.sqlkite.com/utils/typed"
 )
 
 type InputValidator interface {

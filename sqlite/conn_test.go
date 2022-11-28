@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"src.goblgobl.com/sqlite"
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/sqlite"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_New_InvalidPath(t *testing.T) {

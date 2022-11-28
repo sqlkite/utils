@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"src.goblgobl.com/utils"
-	"src.goblgobl.com/utils/log"
-	"src.goblgobl.com/utils/typed"
-	"src.goblgobl.com/utils/uuid"
+	"src.sqlkite.com/utils"
+	"src.sqlkite.com/utils/log"
+	"src.sqlkite.com/utils/typed"
+	"src.sqlkite.com/utils/uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

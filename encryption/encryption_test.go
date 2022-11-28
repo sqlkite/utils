@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_Encrypt_Decrypt(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_KvLogger_Int(t *testing.T) {

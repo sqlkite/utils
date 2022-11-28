@@ -1,6 +1,6 @@
 package validation
 
-import "src.goblgobl.com/utils"
+import "src.sqlkite.com/utils"
 
 var (
 	globalPool *Pool

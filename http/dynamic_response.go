@@ -12,10 +12,10 @@ time.
 */
 
 import (
-	"src.goblgobl.com/utils"
-	"src.goblgobl.com/utils/json"
-	"src.goblgobl.com/utils/log"
-	"src.goblgobl.com/utils/validation"
+	"src.sqlkite.com/utils"
+	"src.sqlkite.com/utils/json"
+	"src.sqlkite.com/utils/log"
+	"src.sqlkite.com/utils/validation"
 
 	"github.com/valyala/fasthttp"
 )
@@ -80,7 +80,6 @@ func Ok(data any) Response {
 		}
 	}
 	return OkBytes(body)
-
 }
 
 func OkBytes(body []byte) DynamicResponse {

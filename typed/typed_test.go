@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils/json"
+	"src.sqlkite.com/tests/assert"
+	"src.sqlkite.com/utils/json"
 )
 
 func Test_Must(t *testing.T) {

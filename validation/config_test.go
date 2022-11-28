@@ -3,7 +3,7 @@ package validation
 import (
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_Configure_Defaults(t *testing.T) {

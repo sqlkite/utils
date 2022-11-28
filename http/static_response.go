@@ -5,9 +5,9 @@ Generic errors that don't chnange. Things like internal server error.
 */
 
 import (
-	"src.goblgobl.com/utils"
-	"src.goblgobl.com/utils/json"
-	"src.goblgobl.com/utils/log"
+	"src.sqlkite.com/utils"
+	"src.sqlkite.com/utils/json"
+	"src.sqlkite.com/utils/log"
 
 	"github.com/valyala/fasthttp"
 )

@@ -3,9 +3,9 @@ package validation
 import (
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils/json"
-	"src.goblgobl.com/utils/typed"
+	"src.sqlkite.com/tests/assert"
+	"src.sqlkite.com/utils/json"
+	"src.sqlkite.com/utils/typed"
 )
 
 func Test_Result_InvalidField_NoData(t *testing.T) {

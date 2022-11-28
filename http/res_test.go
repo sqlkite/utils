@@ -3,10 +3,10 @@ package http
 import (
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils/log"
-	"src.goblgobl.com/utils/typed"
-	"src.goblgobl.com/utils/validation"
+	"src.sqlkite.com/tests/assert"
+	"src.sqlkite.com/utils/log"
+	"src.sqlkite.com/utils/typed"
+	"src.sqlkite.com/utils/validation"
 
 	"github.com/valyala/fasthttp"
 )

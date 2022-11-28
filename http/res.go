@@ -11,7 +11,7 @@ each response to figure out how it's going to interact with it.
 */
 
 import (
-	"src.goblgobl.com/utils/log"
+	"src.sqlkite.com/utils/log"
 
 	"github.com/valyala/fasthttp"
 )

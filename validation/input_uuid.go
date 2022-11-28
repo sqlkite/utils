@@ -2,8 +2,8 @@ package validation
 
 import (
 	"github.com/valyala/fasthttp"
-	"src.goblgobl.com/utils/typed"
-	"src.goblgobl.com/utils/uuid"
+	"src.sqlkite.com/utils/typed"
+	"src.sqlkite.com/utils/uuid"
 )
 
 func UUID(field string) *InputUUID {

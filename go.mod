@@ -1,6 +1,8 @@
-module src.goblgobl.com/utils
+module src.sqlkite.com/utils
 
 go 1.19
+
+replace src.sqlkite.com/sqlite => ../sqlite
 
 require (
 	github.com/goccy/go-json v0.9.11
@@ -9,8 +11,8 @@ require (
 	github.com/valyala/fasthttp v1.41.0
 	golang.org/x/crypto v0.1.0
 	golang.org/x/sync v0.1.0
-	src.goblgobl.com/sqlite v0.0.4
-	src.goblgobl.com/tests v0.0.2
+	src.sqlkite.com/sqlite v0.0.4
+	src.sqlkite.com/tests v0.0.0-20221128084111-4f87425f94ef
 )
 
 require (

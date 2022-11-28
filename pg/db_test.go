@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
-	"src.goblgobl.com/tests"
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests"
+	"src.sqlkite.com/tests/assert"
 )
 
 var db DB

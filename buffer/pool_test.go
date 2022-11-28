@@ -3,7 +3,7 @@ package buffer
 import (
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_Pool_Checkout_and_Release(t *testing.T) {

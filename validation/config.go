@@ -1,6 +1,6 @@
 package validation
 
-import "src.goblgobl.com/utils/log"
+import "src.sqlkite.com/utils/log"
 
 type Config struct {
 	PoolSize  uint16 `json:"pool_size"`

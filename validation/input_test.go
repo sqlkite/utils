@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/valyala/fasthttp"
-	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils/typed"
+	"src.sqlkite.com/tests/assert"
+	"src.sqlkite.com/utils/typed"
 )
 
 func Test_String_Required(t *testing.T) {

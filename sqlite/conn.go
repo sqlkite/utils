@@ -3,10 +3,10 @@ package sqlite
 import (
 	"strconv"
 
-	"src.goblgobl.com/sqlite"
-	"src.goblgobl.com/utils"
-	"src.goblgobl.com/utils/log"
-	"src.goblgobl.com/utils/typed"
+	"src.sqlkite.com/sqlite"
+	"src.sqlkite.com/utils"
+	"src.sqlkite.com/utils/log"
+	"src.sqlkite.com/utils/typed"
 )
 
 var (

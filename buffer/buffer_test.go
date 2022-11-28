@@ -3,7 +3,7 @@ package buffer
 import (
 	"testing"
 
-	"src.goblgobl.com/tests/assert"
+	"src.sqlkite.com/tests/assert"
 )
 
 func Test_Buffer_Write_NoGrow(t *testing.T) {

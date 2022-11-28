@@ -3,7 +3,7 @@ package log
 import (
 	"strings"
 
-	"src.goblgobl.com/utils"
+	"src.sqlkite.com/utils"
 )
 
 type Config struct {

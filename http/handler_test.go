@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/valyala/fasthttp"
-	"src.goblgobl.com/tests"
-	"src.goblgobl.com/tests/assert"
-	"src.goblgobl.com/utils/log"
-	"src.goblgobl.com/utils/typed"
+	"src.sqlkite.com/tests"
+	"src.sqlkite.com/tests/assert"
+	"src.sqlkite.com/utils/log"
+	"src.sqlkite.com/utils/typed"
 )
 
 func Test_Handler_EnvLoader_Error(t *testing.T) {
