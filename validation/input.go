@@ -8,8 +8,13 @@ import (
 )
 
 type InputValidator interface {
-	validate(input typed.Typed, res *Result)
-	argsToTyped(args *fasthttp.Args, dest typed.Typed)
+	validate(field string, input typed.Typed, res *Result)
+	argsToTyped(field string, args *fasthttp.Args, dest typed.Typed)
+}
+
+type field struct {
+	name      string
+	validator InputValidator
 }
 
 func Input() *input {
@@ -17,42 +22,39 @@ func Input() *input {
 }
 
 type input struct {
-	validators []InputValidator
+	fields []field
 }
 
-func (i *input) Field(v InputValidator) *input {
-	i.validators = append(i.validators, v)
+func (i *input) Field(name string, validator InputValidator) *input {
+	i.fields = append(i.fields, field{name, validator})
 	return i
 }
 
 func (i *input) Validate(input typed.Typed, res *Result) bool {
 	len := res.Len()
-	for _, validator := range i.validators {
-		validator.validate(input, res)
+	for _, field := range i.fields {
+		field.validator.validate(field.name, input, res)
 	}
 	return res.Len() == len
 }
 
 func (i *input) ValidateArgs(args *fasthttp.Args, res *Result) (typed.Typed, bool) {
-	validators := i.validators
-	input := make(typed.Typed, len(validators))
-	for _, validator := range i.validators {
-		validator.argsToTyped(args, input)
+	fields := i.fields
+	input := make(typed.Typed, len(fields))
+	for _, field := range fields {
+		field.validator.argsToTyped(field.name, args, input)
 	}
 	return input, i.Validate(input, res)
 }
 
-func inputError(field string, meta Meta, data any, args ...any) InvalidField {
+func invalid(meta Meta, data any, args ...any) Invalid {
 	err := meta.Error
 	if len(args) > 0 {
 		err = fmt.Sprintf(err, args...)
 	}
-	return InvalidField{
-		Field: field,
-		Invalid: Invalid{
-			Data:  data,
-			Code:  meta.Code,
-			Error: err,
-		},
+	return Invalid{
+		Data:  data,
+		Code:  meta.Code,
+		Error: err,
 	}
 }

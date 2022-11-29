@@ -6,48 +6,34 @@ import (
 	"src.sqlkite.com/utils/uuid"
 )
 
-func UUID(field string) *InputUUID {
-	return &InputUUID{
-		field:       field,
-		errType:     inputError(field, InvalidUUIDType, nil),
-		errRequired: inputError(field, Required, nil),
+func UUID() *UUIDValidator {
+	return &UUIDValidator{
+		errType:     invalid(InvalidUUIDType, nil),
+		errRequired: invalid(Required, nil),
 	}
 }
 
-type InputUUID struct {
-	field       string
+type UUIDValidator struct {
 	dflt        string
 	required    bool
-	errType     InvalidField
-	errRequired InvalidField
+	errType     Invalid
+	errRequired Invalid
 }
 
-func (i *InputUUID) argsToTyped(args *fasthttp.Args, t typed.Typed) {
-	field := i.field
+func (i *UUIDValidator) argsToTyped(field string, args *fasthttp.Args, t typed.Typed) {
 	if value := args.Peek(field); value != nil {
 		t[field] = string(value)
 	}
 }
 
-func (i *InputUUID) Clone(field string) *InputUUID {
-	return &InputUUID{
-		field:       field,
-		dflt:        i.dflt,
-		required:    i.required,
-		errType:     inputError(field, InvalidUUIDType, nil),
-		errRequired: inputError(field, Required, nil),
-	}
-}
-
-func (i *InputUUID) validate(input typed.Typed, res *Result) {
-	field := i.field
+func (i *UUIDValidator) validate(field string, input typed.Typed, res *Result) {
 	value, exists := input.StringIf(field)
 
 	if !exists {
 		if _, exists = input[field]; !exists && i.required {
-			res.add(i.errRequired)
+			res.add(InvalidField{i.errRequired, field})
 		} else if exists {
-			res.add(i.errType)
+			res.add(InvalidField{i.errType, field})
 		}
 		if dflt := i.dflt; dflt != "" {
 			input[field] = dflt
@@ -56,16 +42,16 @@ func (i *InputUUID) validate(input typed.Typed, res *Result) {
 	}
 
 	if !uuid.IsValid(value) {
-		res.add(i.errType)
+		res.add(InvalidField{i.errType, field})
 	}
 }
 
-func (i *InputUUID) Required() *InputUUID {
+func (i *UUIDValidator) Required() *UUIDValidator {
 	i.required = true
 	return i
 }
 
-func (i *InputUUID) Default(value string) *InputUUID {
+func (i *UUIDValidator) Default(value string) *UUIDValidator {
 	i.dflt = value
 	return i
 }

@@ -10,11 +10,11 @@ import (
 )
 
 func Test_String_Required(t *testing.T) {
-	f1 := String("name")
-	f2 := String("code").Required()
+	f1 := String()
+	f2 := String().Required()
 	i := Input().
-		Field(f1).Field(f1.Clone("name_clone")).
-		Field(f2).Field(f2.Clone("code_clone"))
+		Field("name", f1).Field("name_clone", f1).
+		Field("code", f2).Field("code_clone", f2)
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -28,11 +28,11 @@ func Test_String_Required(t *testing.T) {
 }
 
 func Test_String_Default(t *testing.T) {
-	f1 := String("a").Default("leto")
-	f2 := String("b").Required().Default("leto")
+	f1 := String().Default("leto")
+	f2 := String().Required().Default("leto")
 	i := Input().
-		Field(f1).Field(f1.Clone("a_clone")).
-		Field(f2).Field(f2.Clone("b_clone"))
+		Field("a", f1).Field("a_clone", f1).
+		Field("b", f2).Field("b_clone", f2)
 
 	// default doesn't really make sense with required, required
 	// takes precedence
@@ -46,7 +46,7 @@ func Test_String_Default(t *testing.T) {
 
 func Test_String_Type(t *testing.T) {
 	i := Input().
-		Field(String("name"))
+		Field("name", String())
 
 	_, res := testInput(i, "name", 3)
 	assert.Validation(t, res).
@@ -54,13 +54,13 @@ func Test_String_Type(t *testing.T) {
 }
 
 func Test_String_Length(t *testing.T) {
-	f1 := String("f1").Length(0, 3)
-	f2 := String("f2").Length(2, 0)
-	f3 := String("f3").Length(2, 4)
+	f1 := String().Length(0, 3)
+	f2 := String().Length(2, 0)
+	f3 := String().Length(2, 4)
 	i := Input().
-		Field(f1).Field(f1.Clone("f1_clone")).
-		Field(f2).Field(f2.Clone("f2_clone")).
-		Field(f3).Field(f3.Clone("f3_clone"))
+		Field("f1", f1).Field("f1_clone", f1).
+		Field("f2", f2).Field("f2_clone", f2).
+		Field("f3", f3).Field("f3_clone", f3)
 
 	_, res := testInput(i, "f1", "1234", "f2", "1", "f3", "1", "f1_clone", "1234", "f2_clone", "1", "f3_clone", "1")
 	assert.Validation(t, res).
@@ -91,9 +91,9 @@ func Test_String_Length(t *testing.T) {
 }
 
 func Test_String_Pattern(t *testing.T) {
-	f1 := String("f").Pattern("\\d.")
+	f1 := String().Pattern("\\d.")
 	i := Input().
-		Field(f1).Field(f1.Clone("f_clone"))
+		Field("f", f1).Field("f_clone", f1)
 
 	_, res := testInput(i, "f", "1d", "f_clone", "1d")
 	assert.Validation(t, res).
@@ -106,15 +106,15 @@ func Test_String_Pattern(t *testing.T) {
 }
 
 func Test_String_Func(t *testing.T) {
-	f1 := String("f").Func(func(field string, value string, input typed.Typed, res *Result) string {
+	f1 := String().Func(func(field string, value string, input typed.Typed, res *Result) string {
 		if value == "a" {
 			return "a1"
 		}
-		res.add(inputError(field, InvalidStringPattern, nil))
+		res.InvalidField(field, InvalidStringPattern, nil)
 		return value
 	})
 
-	i := Input().Field(f1).Field(f1.Clone("f_clone"))
+	i := Input().Field("f", f1).Field("f_clone", f1)
 
 	data, res := testInput(i, "f", "a", "f_clone", "a")
 	assert.Equal(t, data.String("f"), "a1")
@@ -131,16 +131,16 @@ func Test_String_Func(t *testing.T) {
 }
 
 func Test_String_Converter(t *testing.T) {
-	f1 := String("f").Convert(func(field string, value string, input typed.Typed, res *Result) any {
+	f1 := String().Convert(func(field string, value string, input typed.Typed, res *Result) any {
 		b, err := hex.DecodeString(value)
 		if err == nil {
 			return b
 		}
-		res.add(inputError(field, InvalidStringPattern, nil))
+		res.InvalidField(field, InvalidStringPattern, nil)
 		return nil
 	})
 
-	i := Input().Field(f1).Field(f1.Clone("f_clone"))
+	i := Input().Field("f", f1).Field("f_clone", f1)
 
 	data, res := testInput(i, "f", "FFFe", "f_clone", "FFFe")
 	assert.Bytes(t, data.Bytes("f"), []byte{255, 254})
@@ -157,15 +157,17 @@ func Test_String_Converter(t *testing.T) {
 }
 
 func Test_String_Args(t *testing.T) {
-	i := Input().Field(String("name").Required().Length(4, 4))
+	i := Input().
+		Field("name", String().Required().Length(4, 4))
+
 	_, res := testArgs(i, "name", "leto")
 	assert.Validation(t, res).FieldsHaveNoErrors("name")
 }
 
 func Test_Int_Required(t *testing.T) {
 	i := Input().
-		Field(Int("name")).
-		Field(Int("code").Required())
+		Field("name", Int()).
+		Field("code", Int().Required())
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -179,7 +181,7 @@ func Test_Int_Required(t *testing.T) {
 
 func Test_Int_Type(t *testing.T) {
 	i := Input().
-		Field(Int("a"))
+		Field("a", Int())
 
 	_, res := testInput(i, "a", "leto")
 	assert.Validation(t, res).
@@ -193,8 +195,8 @@ func Test_Int_Type(t *testing.T) {
 
 func Test_Int_Default(t *testing.T) {
 	i := Input().
-		Field(Int("a").Default(99)).
-		Field(Int("b").Required().Default(88))
+		Field("a", Int().Default(99)).
+		Field("b", Int().Required().Default(88))
 
 	// default doesn't really make sense with required, required
 	// takes precedence
@@ -206,8 +208,8 @@ func Test_Int_Default(t *testing.T) {
 
 func Test_Int_MinMax(t *testing.T) {
 	i := Input().
-		Field(Int("f1").Min(10)).
-		Field(Int("f2").Max(10))
+		Field("f1", Int().Min(10)).
+		Field("f2", Int().Max(10))
 
 	_, res := testInput(i, "f1", 9, "f2", 11)
 	assert.Validation(t, res).
@@ -225,7 +227,7 @@ func Test_Int_MinMax(t *testing.T) {
 
 func Test_Int_Range(t *testing.T) {
 	i := Input().
-		Field(Int("f1").Range(10, 20))
+		Field("f1", Int().Range(10, 20))
 
 	for _, value := range []int{9, 21, 0, 30} {
 		_, res := testInput(i, "f1", value)
@@ -246,11 +248,11 @@ func Test_Int_Range(t *testing.T) {
 
 func Test_Int_Func(t *testing.T) {
 	i := Input().
-		Field(Int("f").Func(func(field string, value int, input typed.Typed, res *Result) int {
+		Field("f", Int().Func(func(field string, value int, input typed.Typed, res *Result) int {
 			if value == 9001 {
 				return 9002
 			}
-			res.add(inputError(field, InvalidIntMax, nil))
+			res.InvalidField(field, InvalidIntMax, nil)
 			return value
 		}))
 
@@ -266,7 +268,7 @@ func Test_Int_Func(t *testing.T) {
 }
 
 func Test_Int_Args(t *testing.T) {
-	i := Input().Field(Int("id").Required().Range(4, 4))
+	i := Input().Field("id", Int().Required().Range(4, 4))
 	input, res := testArgs(i, "id", "4")
 	assert.Validation(t, res).FieldsHaveNoErrors("id")
 	assert.Equal(t, input.Int("id"), 4)
@@ -278,8 +280,8 @@ func Test_Int_Args(t *testing.T) {
 
 func Test_Bool_Required(t *testing.T) {
 	i := Input().
-		Field(Bool("required")).
-		Field(Bool("agree").Required())
+		Field("required", Bool()).
+		Field("age", Bool().Required())
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -293,7 +295,7 @@ func Test_Bool_Required(t *testing.T) {
 
 func Test_Bool_Type(t *testing.T) {
 	i := Input().
-		Field(Bool("a"))
+		Field("a", Bool())
 
 	_, res := testInput(i, "a", "leto")
 	assert.Validation(t, res).
@@ -307,8 +309,8 @@ func Test_Bool_Type(t *testing.T) {
 
 func Test_Bool_Default(t *testing.T) {
 	i := Input().
-		Field(Bool("a").Default(true)).
-		Field(Bool("b").Required().Default(true))
+		Field("a", Bool().Default(true)).
+		Field("b", Bool().Required().Default(true))
 
 	// default doesn't really make sense with required, required
 	// takes precedence
@@ -320,11 +322,11 @@ func Test_Bool_Default(t *testing.T) {
 
 func Test_Bool_Func(t *testing.T) {
 	i := Input().
-		Field(Bool("f").Func(func(field string, value bool, input typed.Typed, res *Result) bool {
+		Field("f", Bool().Func(func(field string, value bool, input typed.Typed, res *Result) bool {
 			if value == false {
 				return true
 			}
-			res.add(inputError(field, InvalidBoolType, nil))
+			res.InvalidField(field, InvalidBoolType, nil)
 			return value
 		}))
 
@@ -340,7 +342,7 @@ func Test_Bool_Func(t *testing.T) {
 }
 
 func Test_Bool_Args(t *testing.T) {
-	i := Input().Field(Bool("agree").Required())
+	i := Input().Field("agree", Bool().Required())
 	for _, value := range []string{"true", "TRUE", "True"} {
 		input, res := testArgs(i, "agree", value)
 		assert.Validation(t, res).FieldsHaveNoErrors("agree")
@@ -360,11 +362,11 @@ func Test_Bool_Args(t *testing.T) {
 }
 
 func Test_UUID_Required(t *testing.T) {
-	f1 := String("id")
-	f2 := String("parent_id").Required()
+	f1 := UUID()
+	f2 := UUID().Required()
 	i := Input().
-		Field(f1).Field(f1.Clone("id_clone")).
-		Field(f2).Field(f2.Clone("parent_id_clone"))
+		Field("id", f1).Field("id_clone", f1).
+		Field("parent_id", f2).Field("parent_id_clone", f2)
 
 	_, res := testInput(i)
 	assert.Validation(t, res).
@@ -377,26 +379,8 @@ func Test_UUID_Required(t *testing.T) {
 		FieldsHaveNoErrors("parent_id", "id", "parent_id_clone", "id_clone")
 }
 
-func Test_UUID_Default(t *testing.T) {
-	f1 := String("a").Default("leto")
-	f2 := String("b").Required().Default("leto")
-	i := Input().
-		Field(f1).Field(f1.Clone("a_clone")).
-		Field(f2).Field(f2.Clone("b_clone"))
-
-	// default doesn't really make sense with required, required
-	// takes precedence
-	data, res := testInput(i)
-	assert.Equal(t, data.String("a"), "leto")
-	assert.Equal(t, data.String("a_clone"), "leto")
-	assert.Validation(t, res).
-		Field("b", Required).
-		Field("b_clone", Required)
-}
-
 func Test_UUID_Type(t *testing.T) {
-	i := Input().
-		Field(UUID("id"))
+	i := Input().Field("id", UUID())
 
 	_, res := testInput(i, "id", 3)
 	assert.Validation(t, res).
