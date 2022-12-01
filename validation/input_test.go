@@ -92,17 +92,31 @@ func Test_String_Length(t *testing.T) {
 
 func Test_String_Pattern(t *testing.T) {
 	f1 := String().Pattern("\\d.")
-	o := Object().
+	o1 := Object().
 		Field("f", f1).Field("f_clone", f1)
 
-	_, res := testInput(o, "f", "1d", "f_clone", "1d")
+	_, res := testInput(o1, "f", "1d", "f_clone", "1d")
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("f", "f_clone")
 
-	_, res = testInput(o, "f", "1", "f_clone", "1")
+	_, res = testInput(o1, "f", "1", "f_clone", "1")
 	assert.Validation(t, res).
 		Field("f", InvalidStringPattern, nil).
-		Field("f_clone", InvalidStringPattern, nil)
+		FieldMessage("f", "is not valid"). // default/generic error
+		Field("f_clone", InvalidStringPattern, nil).
+		FieldMessage("f_clone", "is not valid") // default/generic error
+
+	// explicit error message
+	f2 := String().Pattern("^\\d$", "must be a number")
+	o2 := Object().
+		Field("f", f2).Field("f_clone", f2)
+
+	_, res = testInput(o2, "f", "1d", "f_clone", "1d")
+	assert.Validation(t, res).
+		Field("f", InvalidStringPattern, nil).
+		FieldMessage("f", "must be a number").
+		Field("f_clone", InvalidStringPattern, nil).
+		FieldMessage("f_clone", "must be a number")
 }
 
 func Test_String_Func(t *testing.T) {

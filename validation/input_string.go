@@ -103,9 +103,14 @@ func (v *StringValidator) Length(min int, max int) *StringValidator {
 	return v
 }
 
-func (v *StringValidator) Pattern(pattern string) *StringValidator {
+func (v *StringValidator) Pattern(pattern string, error ...string) *StringValidator {
+	errorMessage := ""
+	if error != nil {
+		errorMessage = error[0]
+	}
 	v.rules = append(v.rules, StringPattern{
-		pattern: regexp.MustCompile(pattern),
+		errorMessage: errorMessage,
+		pattern:      regexp.MustCompile(pattern),
 	})
 	return v
 }
@@ -147,8 +152,9 @@ func (r StringLen) fields(fields []string) StringRule {
 }
 
 type StringPattern struct {
-	pattern *regexp.Regexp
-	err     InvalidField
+	pattern      *regexp.Regexp
+	err          InvalidField
+	errorMessage string
 }
 
 func (r StringPattern) Validate(fields []string, value string, object typed.Typed, input typed.Typed, res *Result) string {
@@ -160,10 +166,16 @@ func (r StringPattern) Validate(fields []string, value string, object typed.Type
 
 func (r StringPattern) fields(fields []string) StringRule {
 	pattern := r.pattern
-	return StringPattern{
-		pattern: pattern,
-		err:     invalidField(fields, InvalidStringPattern, nil),
+	errorMessage := r.errorMessage
+	sp := StringPattern{
+		pattern:      pattern,
+		errorMessage: errorMessage,
+		err:          invalidField(fields, InvalidStringPattern, nil),
 	}
+	if errorMessage != "" {
+		sp.err.Error = errorMessage
+	}
+	return sp
 }
 
 type StringFunc struct {
