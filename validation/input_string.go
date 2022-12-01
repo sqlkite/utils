@@ -95,6 +95,11 @@ func (v *StringValidator) Default(value string) *StringValidator {
 	return v
 }
 
+func (v *StringValidator) Choice(valid ...string) *StringValidator {
+	v.rules = append(v.rules, StringChoice{valid: valid})
+	return v
+}
+
 func (v *StringValidator) Length(min int, max int) *StringValidator {
 	v.rules = append(v.rules, StringLen{
 		min: min,
@@ -176,6 +181,29 @@ func (r StringPattern) fields(fields []string) StringRule {
 		sp.err.Error = errorMessage
 	}
 	return sp
+}
+
+type StringChoice struct {
+	valid []string
+	err   InvalidField
+}
+
+func (r StringChoice) Validate(fields []string, value string, object typed.Typed, input typed.Typed, res *Result) string {
+	for _, valid := range r.valid {
+		if value == valid {
+			return value
+		}
+	}
+	res.addField(r.err)
+	return value
+}
+
+func (r StringChoice) fields(fields []string) StringRule {
+	valid := r.valid
+	return StringChoice{
+		valid: valid,
+		err:   invalidField(fields, InvalidStringChoice, Choice(valid)),
+	}
 }
 
 type StringFunc struct {

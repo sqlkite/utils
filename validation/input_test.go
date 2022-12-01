@@ -90,6 +90,21 @@ func Test_String_Length(t *testing.T) {
 		FieldsHaveNoErrors("f3", "f3_clone")
 }
 
+func Test_String_Choice(t *testing.T) {
+	f1 := String().Choice("c1", "c2")
+	o1 := Object().
+		Field("f", f1).Field("f_clone", f1)
+
+	_, res := testInput(o1, "f", "c1", "f_clone", "c2")
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("f", "f_clone")
+
+	_, res = testInput(o1, "f", "nope", "f_clone", "C2") // case sensitive
+	assert.Validation(t, res).
+		Field("f", InvalidStringChoice, map[string]any{"valid": []string{"c1", "c2"}}).
+		Field("f_clone", InvalidStringChoice, map[string]any{"valid": []string{"c1", "c2"}})
+}
+
 func Test_String_Pattern(t *testing.T) {
 	f1 := String().Pattern("\\d.")
 	o1 := Object().

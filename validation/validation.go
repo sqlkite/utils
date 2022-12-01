@@ -9,6 +9,7 @@ var (
 	InvalidStringType    = M(utils.VAL_STRING_TYPE, "must be a string")
 	InvalidStringLength  = M(utils.VAL_STRING_LEN, "must be between %d and %d characters")
 	InvalidStringPattern = M(utils.VAL_STRING_PATTERN, "is not valid")
+	InvalidStringChoice  = M(utils.VAL_STRING_CHOICE, "is not a valid choice")
 	InvalidIntType       = M(utils.VAL_INT_TYPE, "must be a number")
 	InvalidIntMin        = M(utils.VAL_INT_MIN, "must be greater or equal to %d")
 	InvalidIntMax        = M(utils.VAL_INT_MAX, "must be less than or equal to %d")
@@ -79,5 +80,15 @@ type DataMax struct {
 func Max(max any) any {
 	return DataMax{
 		Max: max,
+	}
+}
+
+type DataChoice[T any] struct {
+	Valid []T `json:"valid"`
+}
+
+func Choice[T any](valid []T) any {
+	return DataChoice[T]{
+		Valid: valid,
 	}
 }
