@@ -468,6 +468,38 @@ func Test_Array_Object(t *testing.T) {
 		FieldsHaveNoErrors("users.0.name")
 }
 
+func Test_Any_Required(t *testing.T) {
+	o := Object().
+		Field("name", Any()).
+		Field("code", Any().Required())
+
+	_, res := testInput(o)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("name").
+		Field("code", Required)
+
+	_, res = testInput(o, "code", 1)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("code", "name")
+}
+
+func Test_Any_Default(t *testing.T) {
+	o := Object().Field("name", Any().Default(32))
+
+	data, _ := testInput(o)
+	assert.Equal(t, data.Int("name"), 32)
+}
+
+func Test_Any_Func(t *testing.T) {
+	o := Object().Field("name", Any().Func(func(path []string, value any, object typed.Typed, input typed.Typed, res *Result) any {
+		assert.Equal(t, value.(string), "one-one")
+		return 11
+	}))
+
+	data, _ := testInput(o, "name", "one-one")
+	assert.Equal(t, data.Int("name"), 11)
+}
+
 func testInput(o *ObjectValidator, args ...any) (typed.Typed, *Result) {
 	m := make(typed.Typed, len(args)/2)
 	for i := 0; i < len(args); i += 2 {
