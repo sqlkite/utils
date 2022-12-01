@@ -85,8 +85,8 @@ func Test_ServerError(t *testing.T) {
 
 func Test_Validation(t *testing.T) {
 	result := validation.NewResult(5)
-	result.InvalidField("field1", validation.Required, nil)
-	result.InvalidField("field2", validation.Required, 331)
+	result.InvalidField([]string{"field1"}, validation.Required, nil)
+	result.InvalidField([]string{"field2"}, validation.Required, 331)
 	result.Invalid(validation.InvalidStringType, nil)
 	result.Invalid(validation.InvalidStringType, map[string]any{"over": 9000})
 
@@ -98,26 +98,27 @@ func Test_Validation(t *testing.T) {
 	invalid := res.json.Objects("invalid")
 	assert.Equal(t, len(invalid), 4)
 	assert.Equal(t, invalid[0].Int("code"), 1001)
-	assert.Equal(t, invalid[0].String("field"), "field1")
+	assert.Equal(t, invalid[0]["fields"].([]interface{})[0].(string), "field1")
 	assert.Equal(t, invalid[0].String("error"), "required")
 	assert.Nil(t, invalid[0].Object("data"))
 
 	assert.Equal(t, invalid[1].Int("code"), 1001)
-	assert.Equal(t, invalid[1].String("field"), "field2")
+	assert.Equal(t, invalid[1]["fields"].([]interface{})[0].(string), "field2")
 	assert.Equal(t, invalid[1].String("error"), "required")
 	assert.Equal(t, invalid[1].Int("data"), 331)
 
 	assert.Equal(t, invalid[2].Int("code"), 1002)
-	assert.Equal(t, invalid[2].String("field"), "")
+	assert.Equal(t, invalid[2].String("fields"), "")
 	assert.Equal(t, invalid[2].String("error"), "must be a string")
 	assert.Nil(t, invalid[2].Object("data"))
 
 	assert.Equal(t, invalid[3].Int("code"), 1002)
-	assert.Equal(t, invalid[3].String("field"), "")
 	assert.Equal(t, invalid[3].String("error"), "must be a string")
 	assert.Equal(t, invalid[3].Object("data").Int("over"), 9000)
+	_, exists := invalid[3]["fields"]
+	assert.False(t, exists)
 
-	assert.Equal(t, res.log["res"], "262")
+	assert.Equal(t, res.log["res"], "268")
 	assert.Equal(t, res.log["code"], "2004")
 	assert.Equal(t, res.log["status"], "400")
 }

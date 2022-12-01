@@ -5,26 +5,27 @@ import (
 	"src.sqlkite.com/utils/typed"
 )
 
-type BoolFn interface {
-	Validate(field string, value bool, rest typed.Typed, res *Result) bool
+type BoolRule interface {
+	fields(fields []string) BoolRule
+	Validate(fields []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool
 }
 
 func Bool() *BoolValidator {
-	return &BoolValidator{
-		errType:     invalid(InvalidBoolType, nil),
-		errRequired: invalid(Required, nil),
-	}
+	return &BoolValidator{}
 }
 
 type BoolValidator struct {
+	fields      []string
+	field       string
 	dflt        bool
 	required    bool
-	validators  []BoolFn
-	errType     Invalid
-	errRequired Invalid
+	rules       []BoolRule
+	errType     InvalidField
+	errRequired InvalidField
 }
 
-func (i *BoolValidator) argsToTyped(field string, args *fasthttp.Args, t typed.Typed) {
+func (v *BoolValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	field := v.field
 	if value := args.Peek(field); value != nil {
 		// switch string([]byte) is optimized by Go
 		switch string(value) {
@@ -38,47 +39,72 @@ func (i *BoolValidator) argsToTyped(field string, args *fasthttp.Args, t typed.T
 	}
 }
 
-func (i *BoolValidator) Required() *BoolValidator {
-	i.required = true
-	return i
-}
-
-func (i *BoolValidator) validate(field string, input typed.Typed, res *Result) {
-	value, exists := input.BoolIf(field)
+func (v *BoolValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
+	field := v.field
+	value, exists := object.BoolIf(field)
 
 	if !exists {
-		if _, exists := input[field]; !exists {
-			if i.required {
-				res.add(InvalidField{i.errRequired, field})
-			} else if dflt := i.dflt; dflt != false {
-				input[field] = dflt
+		if _, exists := object[field]; !exists {
+			if v.required {
+				res.addField(v.errRequired)
+			} else if dflt := v.dflt; dflt != false {
+				object[field] = dflt
 			}
 			return
 		}
-		res.add(InvalidField{i.errType, field})
+		res.addField(v.errType)
 		return
 	}
 
-	for _, validator := range i.validators {
-		value = validator.Validate(field, value, input, res)
+	fields := v.fields
+	for _, rule := range v.rules {
+		value = rule.Validate(fields, value, object, input, res)
 	}
-	input[field] = value
+	object[field] = value
 }
 
-func (i *BoolValidator) Default(value bool) *BoolValidator {
-	i.dflt = value
-	return i
+func (v *BoolValidator) addField(field string) InputValidator {
+	field, fields := expandFields(field, v.fields, v.field)
+
+	rules := make([]BoolRule, len(v.rules))
+	for i, rule := range v.rules {
+		rules[i] = rule.fields(fields)
+	}
+
+	return &BoolValidator{
+		field:       field,
+		fields:      fields,
+		dflt:        v.dflt,
+		required:    v.required,
+		rules:       rules,
+		errType:     invalidField(fields, InvalidBoolType, nil),
+		errRequired: invalidField(fields, Required, nil),
+	}
 }
 
-func (i *BoolValidator) Func(fn func(field string, value bool, input typed.Typed, res *Result) bool) *BoolValidator {
-	i.validators = append(i.validators, BoolFunc{fn})
-	return i
+func (v *BoolValidator) Required() *BoolValidator {
+	v.required = true
+	return v
+}
+
+func (v *BoolValidator) Default(value bool) *BoolValidator {
+	v.dflt = value
+	return v
+}
+
+func (v *BoolValidator) Func(fn func(fields []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool) *BoolValidator {
+	v.rules = append(v.rules, BoolFunc{fn})
+	return v
 }
 
 type BoolFunc struct {
-	fn func(string, bool, typed.Typed, *Result) bool
+	fn func([]string, bool, typed.Typed, typed.Typed, *Result) bool
 }
 
-func (v BoolFunc) Validate(field string, value bool, rest typed.Typed, res *Result) bool {
-	return v.fn(field, value, rest, res)
+func (v BoolFunc) Validate(fields []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool {
+	return v.fn(fields, value, object, input, res)
+}
+
+func (r BoolFunc) fields(fields []string) BoolRule {
+	return r
 }

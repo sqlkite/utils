@@ -1,0 +1,67 @@
+package validation
+
+import (
+	"github.com/valyala/fasthttp"
+	"src.sqlkite.com/utils/typed"
+)
+
+func Object() *ObjectValidator {
+	return &ObjectValidator{}
+}
+
+type ObjectValidator struct {
+	fields     []string
+	field      string
+	validators []InputValidator
+}
+
+func (o *ObjectValidator) Field(name string, validator InputValidator) *ObjectValidator {
+	o.validators = append(o.validators, validator.addField(name))
+	return o
+}
+
+// object validation called on the root
+func (o *ObjectValidator) Validate(input typed.Typed, res *Result) bool {
+	len := res.Len()
+	for _, validator := range o.validators {
+		validator.validate(input, input, res)
+	}
+	return res.Len() == len
+}
+
+func (o *ObjectValidator) ValidateArgs(args *fasthttp.Args, res *Result) (typed.Typed, bool) {
+	validators := o.validators
+	input := make(typed.Typed, len(validators))
+	for _, validator := range validators {
+		validator.argsToTyped(args, input)
+	}
+	return input, o.Validate(input, res)
+}
+
+// called when the object is nested, unlike the public Validate which is
+// the main entry point into validation.
+func (v *ObjectValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
+	object = object.Object(v.field)
+	for _, validator := range v.validators {
+		validator.validate(object, input, res)
+	}
+}
+
+func (v *ObjectValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	panic("ObjectValidator.argstoType not supported")
+}
+
+func (v *ObjectValidator) addField(field string) InputValidator {
+	validators := make([]InputValidator, len(v.validators))
+	for i, validator := range v.validators {
+		validators[i] = validator.addField(field)
+	}
+
+	field, fields := expandFields(field, v.fields, v.field)
+
+	return &ObjectValidator{
+		field:      field,
+		fields:     fields,
+		validators: validators,
+	}
+}

@@ -7,51 +7,64 @@ import (
 )
 
 func UUID() *UUIDValidator {
-	return &UUIDValidator{
-		errType:     invalid(InvalidUUIDType, nil),
-		errRequired: invalid(Required, nil),
-	}
+	return &UUIDValidator{}
 }
 
 type UUIDValidator struct {
+	field       string
+	fields      []string
 	dflt        string
 	required    bool
-	errType     Invalid
-	errRequired Invalid
+	errType     InvalidField
+	errRequired InvalidField
 }
 
-func (i *UUIDValidator) argsToTyped(field string, args *fasthttp.Args, t typed.Typed) {
+func (v *UUIDValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	field := v.field
 	if value := args.Peek(field); value != nil {
 		t[field] = string(value)
 	}
 }
 
-func (i *UUIDValidator) validate(field string, input typed.Typed, res *Result) {
-	value, exists := input.StringIf(field)
+func (v *UUIDValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
+	field := v.field
+	value, exists := object.StringIf(field)
 
 	if !exists {
-		if _, exists = input[field]; !exists && i.required {
-			res.add(InvalidField{i.errRequired, field})
+		if _, exists = object[field]; !exists && v.required {
+			res.addField(v.errRequired)
 		} else if exists {
-			res.add(InvalidField{i.errType, field})
+			res.addField(v.errType)
 		}
-		if dflt := i.dflt; dflt != "" {
-			input[field] = dflt
+		if dflt := v.dflt; dflt != "" {
+			object[field] = dflt
 		}
 		return
 	}
 
 	if !uuid.IsValid(value) {
-		res.add(InvalidField{i.errType, field})
+		res.addField(v.errType)
 	}
 }
 
-func (i *UUIDValidator) Required() *UUIDValidator {
-	i.required = true
-	return i
+func (v *UUIDValidator) addField(field string) InputValidator {
+	field, fields := expandFields(field, v.fields, v.field)
+	return &UUIDValidator{
+		field:       field,
+		fields:      fields,
+		dflt:        v.dflt,
+		required:    v.required,
+		errType:     invalidField(fields, InvalidUUIDType, nil),
+		errRequired: invalidField(fields, Required, nil),
+	}
 }
 
-func (i *UUIDValidator) Default(value string) *UUIDValidator {
-	i.dflt = value
-	return i
+func (v *UUIDValidator) Required() *UUIDValidator {
+	v.required = true
+	return v
+}
+
+func (v *UUIDValidator) Default(value string) *UUIDValidator {
+	v.dflt = value
+	return v
 }

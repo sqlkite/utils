@@ -12,23 +12,23 @@ func Test_Result_InvalidField_NoData(t *testing.T) {
 	r := NewResult(4)
 	assert.True(t, r.IsValid())
 
-	r.InvalidField("field1", Required, nil)
+	r.InvalidField([]string{"field1"}, Required, nil)
 	assert.False(t, r.IsValid())
 
 	invalid := r.Errors()[0].(InvalidField)
 	assert.Nil(t, invalid.Data)
-	assert.Equal(t, invalid.Field, "field1")
+	assert.List(t, invalid.Fields, []string{"field1"})
 	assert.Equal(t, invalid.Code, 1001)
 	assert.Equal(t, invalid.Error, "required")
 }
 
 func Test_Result_InvalidField_Data(t *testing.T) {
 	r := NewResult(4)
-	r.InvalidField("field1", InvalidStringType, 33)
+	r.InvalidField([]string{"field1"}, InvalidStringType, 33)
 	invalid := r.Errors()[0].(InvalidField)
 	assert.Equal(t, invalid.Data.(int), 33)
 	assert.Equal(t, invalid.Code, 1002)
-	assert.Equal(t, invalid.Field, "field1")
+	assert.List(t, invalid.Fields, []string{"field1"})
 	assert.Equal(t, invalid.Error, "must be a string")
 }
 

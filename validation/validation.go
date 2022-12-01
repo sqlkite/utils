@@ -15,6 +15,7 @@ var (
 	InvalidIntRange      = M(utils.VAL_INT_RANGE, "must be between %d and %d")
 	InvalidBoolType      = M(utils.VAL_BOOL_TYPE, "must be true or false")
 	InvalidUUIDType      = M(utils.VAL_UUID_TYPE, "must be a uuid")
+	InvalidArrayType     = M(utils.VAL_ARRAY_TYPE, "must be an array")
 )
 
 func Checkout() *Result {
@@ -41,7 +42,12 @@ type Invalid struct {
 
 type InvalidField struct {
 	Invalid
-	Field string `json:"field"`
+	Fields []string `json:"fields"`
+}
+
+type InvalidIndexedField struct {
+	InvalidField
+	Indexes []int `json:"indexes"`
 }
 
 type DataRange struct {

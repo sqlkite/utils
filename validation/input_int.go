@@ -8,26 +8,27 @@ import (
 	"src.sqlkite.com/utils/typed"
 )
 
-type IntFn interface {
-	Validate(field string, value int, rest typed.Typed, res *Result) int
+type IntRule interface {
+	fields(fields []string) IntRule
+	Validate(fields []string, value int, object typed.Typed, input typed.Typed, res *Result) int
 }
 
 func Int() *IntValidator {
-	return &IntValidator{
-		errType:     invalid(InvalidIntType, nil),
-		errRequired: invalid(Required, nil),
-	}
+	return &IntValidator{}
 }
 
 type IntValidator struct {
+	field       string
+	fields      []string
 	dflt        int
 	required    bool
-	validators  []IntFn
-	errType     Invalid
-	errRequired Invalid
+	rules       []IntRule
+	errType     InvalidField
+	errRequired InvalidField
 }
 
-func (i *IntValidator) argsToTyped(field string, args *fasthttp.Args, t typed.Typed) {
+func (v *IntValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
+	field := v.field
 	if value := args.Peek(field); value != nil {
 		if n, err := strconv.ParseInt(utils.B2S(value), 10, 0); err == nil {
 			t[field] = n
@@ -37,108 +38,153 @@ func (i *IntValidator) argsToTyped(field string, args *fasthttp.Args, t typed.Ty
 	}
 }
 
-func (i *IntValidator) validate(field string, input typed.Typed, res *Result) {
-	value, exists := input.IntIf(field)
+func (v *IntValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
+	field := v.field
+	value, exists := object.IntIf(field)
 
 	if !exists {
-		if _, exists := input[field]; !exists {
-			if i.required {
-				res.add(InvalidField{i.errRequired, field})
-			} else if dflt := i.dflt; dflt != 0 {
-				input[field] = dflt
+		if _, exists := object[field]; !exists {
+			if v.required {
+				res.addField(v.errRequired)
+			} else if dflt := v.dflt; dflt != 0 {
+				object[field] = dflt
 			}
 			return
 		}
-		res.add(InvalidField{i.errType, field})
+		res.addField(v.errType)
 		return
 	}
 
-	for _, validator := range i.validators {
-		value = validator.Validate(field, value, input, res)
+	fields := v.fields
+	for _, rule := range v.rules {
+		value = rule.Validate(fields, value, object, input, res)
 	}
-	input[field] = value
+	object[field] = value
 }
 
-func (i *IntValidator) Required() *IntValidator {
-	i.required = true
-	return i
+func (v *IntValidator) addField(field string) InputValidator {
+	field, fields := expandFields(field, v.fields, v.field)
+
+	rules := make([]IntRule, len(v.rules))
+	for i, rule := range v.rules {
+		rules[i] = rule.fields(fields)
+	}
+
+	return &IntValidator{
+		field:       field,
+		fields:      fields,
+		dflt:        v.dflt,
+		required:    v.required,
+		rules:       rules,
+		errType:     invalidField(fields, InvalidIntType, nil),
+		errRequired: invalidField(fields, Required, nil),
+	}
 }
 
-func (i *IntValidator) Default(value int) *IntValidator {
-	i.dflt = value
-	return i
+func (v *IntValidator) Required() *IntValidator {
+	v.required = true
+	return v
 }
 
-func (i *IntValidator) Min(min int) *IntValidator {
-	i.validators = append(i.validators, IntMin{
+func (v *IntValidator) Default(value int) *IntValidator {
+	v.dflt = value
+	return v
+}
+
+func (v *IntValidator) Min(min int) *IntValidator {
+	v.rules = append(v.rules, IntMin{min: min})
+	return v
+}
+
+func (v *IntValidator) Max(max int) *IntValidator {
+	v.rules = append(v.rules, IntMax{max: max})
+	return v
+}
+
+func (v *IntValidator) Range(min int, max int) *IntValidator {
+	v.rules = append(v.rules, IntRange{
 		min: min,
-		err: invalid(InvalidIntMin, Min(min), min),
+		max: max,
 	})
-	return i
+	return v
 }
 
-func (i *IntValidator) Max(max int) *IntValidator {
-	i.validators = append(i.validators, IntMax{
-		max: max,
-		err: invalid(InvalidIntMax, Max(max), max),
-	})
-	return i
-}
-func (i *IntValidator) Range(min int, max int) *IntValidator {
-	i.validators = append(i.validators, IntRange{
-		min: min,
-		max: max,
-		err: invalid(InvalidIntRange, Range(min, max), min, max),
-	})
-	return i
-}
-
-func (i *IntValidator) Func(fn func(field string, value int, input typed.Typed, res *Result) int) *IntValidator {
-	i.validators = append(i.validators, IntFunc{fn})
-	return i
+func (v *IntValidator) Func(fn func(fields []string, value int, object typed.Typed, input typed.Typed, res *Result) int) *IntValidator {
+	v.rules = append(v.rules, IntFunc{fn: fn})
+	return v
 }
 
 type IntMin struct {
 	min int
-	err Invalid
+	err InvalidField
 }
 
-func (v IntMin) Validate(field string, value int, rest typed.Typed, res *Result) int {
-	if value < v.min {
-		res.add(InvalidField{v.err, field})
+func (r IntMin) Validate(fields []string, value int, object typed.Typed, input typed.Typed, res *Result) int {
+	if value < r.min {
+		res.addField(r.err)
 	}
 	return value
+}
+
+func (r IntMin) fields(fields []string) IntRule {
+	min := r.min
+	return IntMin{
+		min: min,
+		err: invalidField(fields, InvalidIntMin, Min(min), min),
+	}
 }
 
 type IntMax struct {
 	max int
-	err Invalid
+	err InvalidField
 }
 
-func (v IntMax) Validate(field string, value int, rest typed.Typed, res *Result) int {
-	if value > v.max {
-		res.add(InvalidField{v.err, field})
+func (r IntMax) Validate(fields []string, value int, object typed.Typed, input typed.Typed, res *Result) int {
+	if value > r.max {
+		res.addField(r.err)
 	}
 	return value
+}
+
+func (r IntMax) fields(fields []string) IntRule {
+	max := r.max
+	return IntMax{
+		max: max,
+		err: invalidField(fields, InvalidIntMax, Max(max), max),
+	}
 }
 
 type IntRange struct {
 	min int
 	max int
-	err Invalid
+	err InvalidField
 }
 
-func (v IntRange) Validate(field string, value int, rest typed.Typed, res *Result) int {
-	if value < v.min || value > v.max {
-		res.add(InvalidField{v.err, field})
+func (r IntRange) Validate(fields []string, value int, object typed.Typed, input typed.Typed, res *Result) int {
+	if value < r.min || value > r.max {
+		res.addField(r.err)
 	}
 	return value
 }
 
-type IntFunc struct {
-	fn func(string, int, typed.Typed, *Result) int
+func (r IntRange) fields(fields []string) IntRule {
+	min := r.min
+	max := r.max
+	return IntRange{
+		min: min,
+		max: max,
+		err: invalidField(fields, InvalidIntRange, Range(min, max), min, max),
+	}
 }
 
-func (v IntFunc) Validate(field string, value int, rest typed.Typed, res *Result) int {
-	return v.fn(field, value, rest, res)
+type IntFunc struct {
+	fn func([]string, int, typed.Typed, typed.Typed, *Result) int
+}
+
+func (v IntFunc) Validate(fields []string, value int, object typed.Typed, input typed.Typed, res *Result) int {
+	return v.fn(fields, value, object, input, res)
+}
+
+func (r IntFunc) fields(fields []string) IntRule {
+	return r
 }
