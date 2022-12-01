@@ -5,18 +5,21 @@ import "src.sqlkite.com/utils"
 var (
 	globalPool *Pool
 
-	Required             = M(utils.VAL_REQUIRED, "required")
-	InvalidStringType    = M(utils.VAL_STRING_TYPE, "must be a string")
-	InvalidStringLength  = M(utils.VAL_STRING_LEN, "must be between %d and %d characters")
-	InvalidStringPattern = M(utils.VAL_STRING_PATTERN, "is not valid")
-	InvalidStringChoice  = M(utils.VAL_STRING_CHOICE, "is not a valid choice")
-	InvalidIntType       = M(utils.VAL_INT_TYPE, "must be a number")
-	InvalidIntMin        = M(utils.VAL_INT_MIN, "must be greater or equal to %d")
-	InvalidIntMax        = M(utils.VAL_INT_MAX, "must be less than or equal to %d")
-	InvalidIntRange      = M(utils.VAL_INT_RANGE, "must be between %d and %d")
-	InvalidBoolType      = M(utils.VAL_BOOL_TYPE, "must be true or false")
-	InvalidUUIDType      = M(utils.VAL_UUID_TYPE, "must be a uuid")
-	InvalidArrayType     = M(utils.VAL_ARRAY_TYPE, "must be an array")
+	Required                = M(utils.VAL_REQUIRED, "required")
+	InvalidStringType       = M(utils.VAL_STRING_TYPE, "must be a string")
+	InvalidStringLength     = M(utils.VAL_STRING_LEN, "must be between %d and %d characters")
+	InvalidStringPattern    = M(utils.VAL_STRING_PATTERN, "is not valid")
+	InvalidStringChoice     = M(utils.VAL_STRING_CHOICE, "is not a valid choice")
+	InvalidIntType          = M(utils.VAL_INT_TYPE, "must be a number")
+	InvalidIntMin           = M(utils.VAL_INT_MIN, "must be greater or equal to %d")
+	InvalidIntMax           = M(utils.VAL_INT_MAX, "must be less than or equal to %d")
+	InvalidIntRange         = M(utils.VAL_INT_RANGE, "must be between %d and %d")
+	InvalidBoolType         = M(utils.VAL_BOOL_TYPE, "must be true or false")
+	InvalidUUIDType         = M(utils.VAL_UUID_TYPE, "must be a uuid")
+	InvalidArrayType        = M(utils.VAL_ARRAY_TYPE, "must be an array")
+	InvalidArrayMinLength   = M(utils.VAL_ARRAY_MIN_LENGTH, "must have at least %d values")
+	InvalidArrayMaxLength   = M(utils.VAL_ARRAY_MAX_LENGTH, "must have no more than %d values")
+	InvalidArrayRangeLength = M(utils.VAL_ARRAY_RANGE_LENGTH, "must have between %d and %d values")
 )
 
 func Checkout() *Result {

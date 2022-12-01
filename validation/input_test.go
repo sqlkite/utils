@@ -468,6 +468,67 @@ func Test_Array_Object(t *testing.T) {
 		FieldsHaveNoErrors("users.0.name")
 }
 
+func Test_Array_MinAndMax(t *testing.T) {
+	createItem := func() typed.Typed {
+		return typed.Typed{"name": "n"}
+	}
+
+	child := Object().Field("name", String())
+	o1 := Object().Field("users", Array().Min(2).Max(3).Required().Validator(child))
+
+	_, res := testInput(o1, "users", []typed.Typed{createItem()})
+	assert.Validation(t, res).Field("users", InvalidArrayMinLength, map[string]any{"min": 2})
+
+	// 4 items, too many
+	_, res = testInput(o1, "users", []typed.Typed{
+		createItem(), createItem(), createItem(), createItem(),
+	})
+	assert.Validation(t, res).Field("users", InvalidArrayMaxLength, map[string]any{"max": 3})
+
+	// 2 items, good
+	_, res = testInput(o1, "users", []typed.Typed{
+		createItem(), createItem(),
+	})
+	assert.Validation(t, res).FieldsHaveNoErrors("users")
+
+	// 3 items, good
+	_, res = testInput(o1, "users", []typed.Typed{
+		createItem(), createItem(), createItem(),
+	})
+	assert.Validation(t, res).FieldsHaveNoErrors("users")
+}
+
+func Test_Array_Range(t *testing.T) {
+	createItem := func() typed.Typed {
+		return typed.Typed{"name": "n"}
+	}
+
+	child := Object().Field("name", String())
+	o1 := Object().Field("users", Array().Range(2, 3).Required().Validator(child))
+
+	_, res := testInput(o1, "users", []typed.Typed{createItem()})
+	assert.Validation(t, res).Field("users", InvalidArrayRangeLength, map[string]any{"min": 2, "max": 3})
+
+	// 4 items, too many
+	_, res = testInput(o1, "users", []typed.Typed{
+		createItem(), createItem(), createItem(), createItem(),
+	})
+	assert.Validation(t, res).Field("users", InvalidArrayRangeLength, map[string]any{"min": 2, "max": 3})
+
+	// 2 items, good
+	_, res = testInput(o1, "users", []typed.Typed{
+		createItem(), createItem(),
+	})
+	assert.Validation(t, res).FieldsHaveNoErrors("users")
+
+	// 3 items, good
+	_, res = testInput(o1, "users", []typed.Typed{
+		createItem(), createItem(), createItem(),
+	})
+	assert.Validation(t, res).FieldsHaveNoErrors("users")
+
+}
+
 func Test_Any_Required(t *testing.T) {
 	o := Object().
 		Field("name", Any()).
