@@ -20,6 +20,10 @@ var (
 	InvalidArrayMinLength   = M(utils.VAL_ARRAY_MIN_LENGTH, "must have at least %d values")
 	InvalidArrayMaxLength   = M(utils.VAL_ARRAY_MAX_LENGTH, "must have no more than %d values")
 	InvalidArrayRangeLength = M(utils.VAL_ARRAY_RANGE_LENGTH, "must have between %d and %d values")
+	InvalidFloatType        = M(utils.VAL_FLOAT_TYPE, "must be a float")
+	InvalidFloatMin         = M(utils.VAL_FLOAT_MIN, "must be greater or equal to %d")
+	InvalidFloatMax         = M(utils.VAL_FLOAT_MAX, "must be less than or equal to %d")
+	InvalidFloatRange       = M(utils.VAL_FLOAT_RANGE, "must be between %d and %d")
 )
 
 func Checkout() *Result {
@@ -41,7 +45,7 @@ func M(code uint32, error string) Meta {
 type Invalid struct {
 	Code  uint32 `json:"code"`
 	Error string `json:"error"`
-	Data  any    `json:"data,omitempty"`
+	Data  any    `json:"data"` // https://github.com/goccy/go-json/issues/391
 }
 
 type InvalidField struct {

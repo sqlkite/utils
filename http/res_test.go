@@ -118,7 +118,7 @@ func Test_Validation(t *testing.T) {
 	_, exists := invalid[3]["fields"]
 	assert.False(t, exists)
 
-	assert.Equal(t, res.log["res"], "268")
+	assert.Equal(t, res.log["res"], "292")
 	assert.Equal(t, res.log["code"], "2004")
 	assert.Equal(t, res.log["status"], "400")
 }

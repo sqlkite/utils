@@ -6,15 +6,16 @@ replace (
 	src.sqlkite.com/tests => ../tests
 )
 
+
 require (
-	github.com/goccy/go-json v0.9.11
+	github.com/goccy/go-json v0.10.0
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.1.1
-	github.com/valyala/fasthttp v1.42.0
+	github.com/valyala/fasthttp v1.43.0
 	golang.org/x/crypto v0.3.0
 	golang.org/x/sync v0.1.0
 	src.sqlkite.com/sqlite v0.0.0-20221128090856-d9f1b8c6d25c
-	src.sqlkite.com/tests v0.0.0-20221128090459-610d5172ba34
+	src.sqlkite.com/tests v0.0.0-20221201041742-c95aa6465a01
 )
 
 require (

@@ -307,6 +307,120 @@ func Test_Int_Args(t *testing.T) {
 	assert.Equal(t, input.IntOr("id", -1), -1)
 }
 
+func Test_Float_Required(t *testing.T) {
+	o := Object().
+		Field("name", Float()).
+		Field("code", Float().Required())
+
+	_, res := testInput(o)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("name").
+		Field("code", Required)
+
+	_, res = testInput(o, "code", 1)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("code", "name")
+}
+
+func Test_Float_Type(t *testing.T) {
+	o := Object().
+		Field("a", Float())
+
+	_, res := testInput(o, "a", "leto")
+	assert.Validation(t, res).
+		Field("a", InvalidFloatType)
+
+	data, res := testInput(o, "a", "-3292")
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("a")
+	assert.Equal(t, data.Float("a"), -3292)
+}
+
+func Test_Float_Default(t *testing.T) {
+	o := Object().
+		Field("a", Float().Default(99)).
+		Field("b", Float().Required().Default(88))
+
+	// default doesn't really make sense with required, required
+	// takes precedence
+	data, res := testInput(o)
+	assert.Equal(t, data.Float("a"), 99)
+	assert.Validation(t, res).
+		Field("b", Required)
+}
+
+func Test_Float_MinMax(t *testing.T) {
+	o := Object().
+		Field("f1", Float().Min(10.3)).
+		Field("f2", Float().Max(10.3))
+
+	_, res := testInput(o, "f1", 10.2, "f2", 10.4)
+	assert.Validation(t, res).
+		Field("f1", InvalidFloatMin, map[string]any{"min": 10.3}).
+		Field("f2", InvalidFloatMax, map[string]any{"max": 10.3})
+
+	_, res = testInput(o, "f1", 10.3, "f2", 10.3)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("f1", "f2")
+
+	_, res = testInput(o, "f1", 10.4, "f2", 10.2)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("f1", "f2")
+}
+
+func Test_Float_Range(t *testing.T) {
+	o := Object().
+		Field("f1", Float().Range(10.1, 20.2))
+
+	for _, value := range []float64{9, 10.0, 20.3, 21, 0, 30} {
+		_, res := testInput(o, "f1", value)
+		assert.Validation(t, res).
+			Field("f1", InvalidFloatRange, map[string]any{"min": 10.1, "max": 20.2})
+	}
+
+	for _, value := range []float64{10, 10.1, 11, 19, 20, 20.2} {
+		_, res := testInput(o, "f1", value)
+		assert.Validation(t, res).
+			FieldsHaveNoErrors("f1")
+	}
+
+	_, res := testInput(o, "f1", 20.3)
+	assert.Validation(t, res).
+		Field("f1", InvalidFloatRange, map[string]any{"min": 10.1, "max": 20.2})
+}
+
+func Test_Float_Func(t *testing.T) {
+	o := Object().
+		Field("f", Float().Func(func(path []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
+			if value == 9001.0 {
+				return 9002.1
+			}
+			res.InvalidField(path, InvalidFloatMax, nil)
+			return value
+		}))
+
+	data, res := testInput(o, "f", 9001.0)
+	assert.Equal(t, data.Float("f"), 9002.1)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("f")
+
+	data, res = testInput(o, "f", 8001.2)
+	assert.Equal(t, data.Float("f"), 8001.2)
+	assert.Validation(t, res).
+		Field("f", InvalidFloatMax, nil)
+}
+
+func Test_Float_Args(t *testing.T) {
+	o := Object().Field("id", Float().Required().Range(4, 4))
+	input, res := testArgs(o, "id", "4")
+	assert.Validation(t, res).FieldsHaveNoErrors("id")
+	assert.Equal(t, input.Float("id"), 4)
+
+	input, res = testArgs(o, "id", "nope")
+	assert.Validation(t, res).Field("id", InvalidFloatType)
+	assert.Equal(t, input.FloatOr("id", -1), -1)
+}
+
 func Test_Bool_Required(t *testing.T) {
 	o := Object().
 		Field("required", Bool()).
