@@ -10,13 +10,12 @@ func Object() *ObjectValidator {
 }
 
 type ObjectValidator struct {
-	fields     []string
-	field      string
+	field      Field
 	validators []InputValidator
 }
 
-func (o *ObjectValidator) Field(name string, validator InputValidator) *ObjectValidator {
-	o.validators = append(o.validators, validator.addField(name))
+func (o *ObjectValidator) Field(fieldName string, validator InputValidator) *ObjectValidator {
+	o.validators = append(o.validators, validator.addField(fieldName))
 	return o
 }
 
@@ -41,7 +40,7 @@ func (o *ObjectValidator) ValidateArgs(args *fasthttp.Args, res *Result) (typed.
 // called when the object is nested, unlike the public Validate which is
 // the main entry point into validation.
 func (v *ObjectValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
-	object = object.Object(v.field)
+	object = object.Object(v.field.Name)
 	for _, validator := range v.validators {
 		validator.validate(object, input, res)
 	}
@@ -51,17 +50,14 @@ func (v *ObjectValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
 	panic("ObjectValidator.argstoType not supported")
 }
 
-func (v *ObjectValidator) addField(field string) InputValidator {
+func (v *ObjectValidator) addField(fieldName string) InputValidator {
 	validators := make([]InputValidator, len(v.validators))
 	for i, validator := range v.validators {
-		validators[i] = validator.addField(field)
+		validators[i] = validator.addField(fieldName)
 	}
-
-	field, fields := expandFields(field, v.fields, v.field)
-
+	field := v.field.add(fieldName)
 	return &ObjectValidator{
 		field:      field,
-		fields:     fields,
 		validators: validators,
 	}
 }

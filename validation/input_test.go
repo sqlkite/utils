@@ -19,8 +19,8 @@ func Test_String_Required(t *testing.T) {
 	_, res := testInput(o)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("name", "name_clone").
-		Field("code", Required).
-		Field("code_clone", Required)
+		Field("code", Required()).
+		Field("code_clone", Required())
 
 	_, res = testInput(o, "code", "1", "code_clone", "1")
 	assert.Validation(t, res).
@@ -40,8 +40,8 @@ func Test_String_Default(t *testing.T) {
 	assert.Equal(t, data.String("a"), "leto")
 	assert.Equal(t, data.String("a_clone"), "leto")
 	assert.Validation(t, res).
-		Field("b", Required).
-		Field("b_clone", Required)
+		Field("b", Required()).
+		Field("b_clone", Required())
 }
 
 func Test_String_Type(t *testing.T) {
@@ -50,7 +50,7 @@ func Test_String_Type(t *testing.T) {
 
 	_, res := testInput(o, "name", 3)
 	assert.Validation(t, res).
-		Field("name", InvalidStringType)
+		Field("name", InvalidStringType())
 }
 
 func Test_String_Length(t *testing.T) {
@@ -64,18 +64,18 @@ func Test_String_Length(t *testing.T) {
 
 	_, res := testInput(o, "f1", "1234", "f2", "1", "f3", "1", "f1_clone", "1234", "f2_clone", "1", "f3_clone", "1")
 	assert.Validation(t, res).
-		Field("f1", InvalidStringLength, map[string]any{"min": 0, "max": 3}).
-		Field("f2", InvalidStringLength, map[string]any{"min": 2, "max": 0}).
-		Field("f3", InvalidStringLength, map[string]any{"min": 2, "max": 4}).
-		Field("f1_clone", InvalidStringLength, map[string]any{"min": 0, "max": 3}).
-		Field("f2_clone", InvalidStringLength, map[string]any{"min": 2, "max": 0}).
-		Field("f3_clone", InvalidStringLength, map[string]any{"min": 2, "max": 4})
+		Field("f1", InvalidStringLength(0, 3)).
+		Field("f2", InvalidStringLength(2, 0)).
+		Field("f3", InvalidStringLength(2, 4)).
+		Field("f1_clone", InvalidStringLength(0, 3)).
+		Field("f2_clone", InvalidStringLength(2, 0)).
+		Field("f3_clone", InvalidStringLength(2, 4))
 
 	_, res = testInput(o, "f1", "123", "f2", "12", "f3", "12345", "f1_clone", "123", "f2_clone", "12", "f3_clone", "12345")
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("f1", "f2", "f1_clone", "f2_clone").
-		Field("f3", InvalidStringLength, map[string]any{"min": 2, "max": 4}).
-		Field("f3_clone", InvalidStringLength, map[string]any{"min": 2, "max": 4})
+		Field("f3", InvalidStringLength(2, 4)).
+		Field("f3_clone", InvalidStringLength(2, 4))
 
 	_, res = testInput(o, "f1", "1", "f2", "123456677", "f3", "12", "f1_clone", "1", "f2_clone", "123456677", "f3_clone", "12")
 	assert.Validation(t, res).
@@ -101,8 +101,8 @@ func Test_String_Choice(t *testing.T) {
 
 	_, res = testInput(o1, "f", "nope", "f_clone", "C2") // case sensitive
 	assert.Validation(t, res).
-		Field("f", InvalidStringChoice, map[string]any{"valid": []string{"c1", "c2"}}).
-		Field("f_clone", InvalidStringChoice, map[string]any{"valid": []string{"c1", "c2"}})
+		Field("f", InvalidStringChoice([]string{"c1", "c2"})).
+		Field("f_clone", InvalidStringChoice([]string{"c1", "c2"}))
 }
 
 func Test_String_Pattern(t *testing.T) {
@@ -116,9 +116,9 @@ func Test_String_Pattern(t *testing.T) {
 
 	_, res = testInput(o1, "f", "1", "f_clone", "1")
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil).
+		Field("f", InvalidStringPattern()).
 		FieldMessage("f", "is not valid"). // default/generic error
-		Field("f_clone", InvalidStringPattern, nil).
+		Field("f_clone", InvalidStringPattern()).
 		FieldMessage("f_clone", "is not valid") // default/generic error
 
 	// explicit error message
@@ -128,18 +128,18 @@ func Test_String_Pattern(t *testing.T) {
 
 	_, res = testInput(o2, "f", "1d", "f_clone", "1d")
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil).
+		Field("f", InvalidStringPattern()).
 		FieldMessage("f", "must be a number").
-		Field("f_clone", InvalidStringPattern, nil).
+		Field("f_clone", InvalidStringPattern()).
 		FieldMessage("f_clone", "must be a number")
 }
 
 func Test_String_Func(t *testing.T) {
-	f1 := String().Func(func(path []string, value string, object typed.Typed, input typed.Typed, res *Result) string {
+	f1 := String().Func(func(field Field, value string, object typed.Typed, input typed.Typed, res *Result) string {
 		if value == "a" {
 			return "a1"
 		}
-		res.InvalidField(path, InvalidStringPattern, nil)
+		res.AddInvalidField(field, InvalidStringPattern())
 		return value
 	})
 
@@ -155,17 +155,17 @@ func Test_String_Func(t *testing.T) {
 	assert.Equal(t, data.String("f"), "b")
 	assert.Equal(t, data.String("f_clone"), "b")
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil).
-		Field("f_clone", InvalidStringPattern, nil)
+		Field("f", InvalidStringPattern()).
+		Field("f_clone", InvalidStringPattern())
 }
 
 func Test_String_Converter(t *testing.T) {
-	f1 := String().Convert(func(path []string, value string, object typed.Typed, input typed.Typed, res *Result) any {
+	f1 := String().Convert(func(field Field, value string, object typed.Typed, input typed.Typed, res *Result) any {
 		b, err := hex.DecodeString(value)
 		if err == nil {
 			return b
 		}
-		res.InvalidField(path, InvalidStringPattern, nil)
+		res.AddInvalidField(field, InvalidStringPattern())
 		return nil
 	})
 
@@ -181,8 +181,8 @@ func Test_String_Converter(t *testing.T) {
 	assert.True(t, data.Bytes("f") == nil)
 	assert.True(t, data.Bytes("f_clone") == nil)
 	assert.Validation(t, res).
-		Field("f", InvalidStringPattern, nil).
-		Field("f_clone", InvalidStringPattern, nil)
+		Field("f", InvalidStringPattern()).
+		Field("f_clone", InvalidStringPattern())
 }
 
 func Test_String_Args(t *testing.T) {
@@ -201,7 +201,7 @@ func Test_Int_Required(t *testing.T) {
 	_, res := testInput(o)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("name").
-		Field("code", Required)
+		Field("code", Required())
 
 	_, res = testInput(o, "code", 1)
 	assert.Validation(t, res).
@@ -214,7 +214,7 @@ func Test_Int_Type(t *testing.T) {
 
 	_, res := testInput(o, "a", "leto")
 	assert.Validation(t, res).
-		Field("a", InvalidIntType)
+		Field("a", InvalidIntType())
 
 	data, res := testInput(o, "a", "-3292")
 	assert.Validation(t, res).
@@ -232,7 +232,7 @@ func Test_Int_Default(t *testing.T) {
 	data, res := testInput(o)
 	assert.Equal(t, data.Int("a"), 99)
 	assert.Validation(t, res).
-		Field("b", Required)
+		Field("b", Required())
 }
 
 func Test_Int_MinMax(t *testing.T) {
@@ -242,8 +242,8 @@ func Test_Int_MinMax(t *testing.T) {
 
 	_, res := testInput(o, "f1", 9, "f2", 11)
 	assert.Validation(t, res).
-		Field("f1", InvalidIntMin, map[string]any{"min": 10}).
-		Field("f2", InvalidIntMax, map[string]any{"max": 10})
+		Field("f1", InvalidIntMin(10)).
+		Field("f2", InvalidIntMax(10))
 
 	_, res = testInput(o, "f1", 10, "f2", 10)
 	assert.Validation(t, res).
@@ -261,7 +261,7 @@ func Test_Int_Range(t *testing.T) {
 	for _, value := range []int{9, 21, 0, 30} {
 		_, res := testInput(o, "f1", value)
 		assert.Validation(t, res).
-			Field("f1", InvalidIntRange, map[string]any{"min": 10, "max": 20})
+			Field("f1", InvalidIntRange(10, 20))
 	}
 
 	for _, value := range []int{10, 11, 19, 20} {
@@ -272,16 +272,16 @@ func Test_Int_Range(t *testing.T) {
 
 	_, res := testInput(o, "f1", 21)
 	assert.Validation(t, res).
-		Field("f1", InvalidIntRange, map[string]any{"min": 10, "max": 20})
+		Field("f1", InvalidIntRange(10, 20))
 }
 
 func Test_Int_Func(t *testing.T) {
 	o := Object().
-		Field("f", Int().Func(func(path []string, value int, object typed.Typed, input typed.Typed, res *Result) int {
+		Field("f", Int().Func(func(field Field, value int, object typed.Typed, input typed.Typed, res *Result) int {
 			if value == 9001 {
 				return 9002
 			}
-			res.InvalidField(path, InvalidIntMax, nil)
+			res.AddInvalidField(field, InvalidIntMax(444))
 			return value
 		}))
 
@@ -293,7 +293,7 @@ func Test_Int_Func(t *testing.T) {
 	data, res = testInput(o, "f", 8000)
 	assert.Equal(t, data.Int("f"), 8000)
 	assert.Validation(t, res).
-		Field("f", InvalidIntMax, nil)
+		Field("f", InvalidIntMax(444))
 }
 
 func Test_Int_Args(t *testing.T) {
@@ -303,7 +303,7 @@ func Test_Int_Args(t *testing.T) {
 	assert.Equal(t, input.Int("id"), 4)
 
 	input, res = testArgs(o, "id", "nope")
-	assert.Validation(t, res).Field("id", InvalidIntType)
+	assert.Validation(t, res).Field("id", InvalidIntType())
 	assert.Equal(t, input.IntOr("id", -1), -1)
 }
 
@@ -315,9 +315,14 @@ func Test_Float_Required(t *testing.T) {
 	_, res := testInput(o)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("name").
-		Field("code", Required)
+		Field("code", Required())
 
-	_, res = testInput(o, "code", 1)
+	_, res = testInput(o, "code", 1.2)
+	assert.Validation(t, res).
+		FieldsHaveNoErrors("code", "name")
+
+	// accepts ints
+	_, res = testInput(o, "code", 2)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("code", "name")
 }
@@ -328,7 +333,7 @@ func Test_Float_Type(t *testing.T) {
 
 	_, res := testInput(o, "a", "leto")
 	assert.Validation(t, res).
-		Field("a", InvalidFloatType)
+		Field("a", InvalidFloatType())
 
 	data, res := testInput(o, "a", "-3292")
 	assert.Validation(t, res).
@@ -346,7 +351,7 @@ func Test_Float_Default(t *testing.T) {
 	data, res := testInput(o)
 	assert.Equal(t, data.Float("a"), 99)
 	assert.Validation(t, res).
-		Field("b", Required)
+		Field("b", Required())
 }
 
 func Test_Float_MinMax(t *testing.T) {
@@ -356,8 +361,8 @@ func Test_Float_MinMax(t *testing.T) {
 
 	_, res := testInput(o, "f1", 10.2, "f2", 10.4)
 	assert.Validation(t, res).
-		Field("f1", InvalidFloatMin, map[string]any{"min": 10.3}).
-		Field("f2", InvalidFloatMax, map[string]any{"max": 10.3})
+		Field("f1", InvalidFloatMin(10.3)).
+		Field("f2", InvalidFloatMax(10.3))
 
 	_, res = testInput(o, "f1", 10.3, "f2", 10.3)
 	assert.Validation(t, res).
@@ -375,10 +380,10 @@ func Test_Float_Range(t *testing.T) {
 	for _, value := range []float64{9, 10.0, 20.3, 21, 0, 30} {
 		_, res := testInput(o, "f1", value)
 		assert.Validation(t, res).
-			Field("f1", InvalidFloatRange, map[string]any{"min": 10.1, "max": 20.2})
+			Field("f1", InvalidFloatRange(10.1, 20.2))
 	}
 
-	for _, value := range []float64{10, 10.1, 11, 19, 20, 20.2} {
+	for _, value := range []float64{10.1, 10.2, 11.4, 19.2, 20, 20.2} {
 		_, res := testInput(o, "f1", value)
 		assert.Validation(t, res).
 			FieldsHaveNoErrors("f1")
@@ -386,16 +391,16 @@ func Test_Float_Range(t *testing.T) {
 
 	_, res := testInput(o, "f1", 20.3)
 	assert.Validation(t, res).
-		Field("f1", InvalidFloatRange, map[string]any{"min": 10.1, "max": 20.2})
+		Field("f1", InvalidFloatRange(10.1, 20.2))
 }
 
 func Test_Float_Func(t *testing.T) {
 	o := Object().
-		Field("f", Float().Func(func(path []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
+		Field("f", Float().Func(func(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
 			if value == 9001.0 {
 				return 9002.1
 			}
-			res.InvalidField(path, InvalidFloatMax, nil)
+			res.AddInvalidField(field, InvalidFloatMax(32.2))
 			return value
 		}))
 
@@ -407,7 +412,7 @@ func Test_Float_Func(t *testing.T) {
 	data, res = testInput(o, "f", 8001.2)
 	assert.Equal(t, data.Float("f"), 8001.2)
 	assert.Validation(t, res).
-		Field("f", InvalidFloatMax, nil)
+		Field("f", InvalidFloatMax(32.2))
 }
 
 func Test_Float_Args(t *testing.T) {
@@ -417,7 +422,7 @@ func Test_Float_Args(t *testing.T) {
 	assert.Equal(t, input.Float("id"), 4)
 
 	input, res = testArgs(o, "id", "nope")
-	assert.Validation(t, res).Field("id", InvalidFloatType)
+	assert.Validation(t, res).Field("id", InvalidFloatType())
 	assert.Equal(t, input.FloatOr("id", -1), -1)
 }
 
@@ -429,7 +434,7 @@ func Test_Bool_Required(t *testing.T) {
 	_, res := testInput(o)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("required").
-		Field("agree", Required)
+		Field("agree", Required())
 
 	_, res = testInput(o, "agree", true)
 	assert.Validation(t, res).
@@ -442,7 +447,7 @@ func Test_Bool_Type(t *testing.T) {
 
 	_, res := testInput(o, "a", "leto")
 	assert.Validation(t, res).
-		Field("a", InvalidBoolType)
+		Field("a", InvalidBoolType())
 
 	data, res := testInput(o, "a", "true")
 	assert.Validation(t, res).
@@ -460,16 +465,16 @@ func Test_Bool_Default(t *testing.T) {
 	data, res := testInput(o)
 	assert.Equal(t, data.Bool("a"), true)
 	assert.Validation(t, res).
-		Field("b", Required)
+		Field("b", Required())
 }
 
 func Test_Bool_Func(t *testing.T) {
 	o := Object().
-		Field("f", Bool().Func(func(path []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool {
+		Field("f", Bool().Func(func(field Field, value bool, object typed.Typed, input typed.Typed, res *Result) bool {
 			if value == false {
 				return true
 			}
-			res.InvalidField(path, InvalidBoolType, nil)
+			res.AddInvalidField(field, InvalidBoolType())
 			return value
 		}))
 
@@ -481,7 +486,7 @@ func Test_Bool_Func(t *testing.T) {
 	data, res = testInput(o, "f", true)
 	assert.Equal(t, data.Bool("f"), true)
 	assert.Validation(t, res).
-		Field("f", InvalidBoolType, nil)
+		Field("f", InvalidBoolType())
 }
 
 func Test_Bool_Args(t *testing.T) {
@@ -499,7 +504,7 @@ func Test_Bool_Args(t *testing.T) {
 	}
 
 	input, res := testArgs(o, "agree", "other")
-	assert.Validation(t, res).Field("agree", InvalidBoolType)
+	assert.Validation(t, res).Field("agree", InvalidBoolType())
 	_, isBool := input.BoolIf("agree")
 	assert.False(t, isBool)
 }
@@ -514,8 +519,8 @@ func Test_UUID_Required(t *testing.T) {
 	_, res := testInput(o)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("id", "id_clone").
-		Field("parent_id", Required).
-		Field("parent_id_clone", Required)
+		Field("parent_id", Required()).
+		Field("parent_id_clone", Required())
 
 	_, res = testInput(o, "parent_id", "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", "parent_id_clone", "00000000-0000-0000-0000-000000000000")
 	assert.Validation(t, res).
@@ -527,11 +532,11 @@ func Test_UUID_Type(t *testing.T) {
 
 	_, res := testInput(o, "id", 3)
 	assert.Validation(t, res).
-		Field("id", InvalidUUIDType)
+		Field("id", InvalidUUIDType())
 
 	_, res = testInput(o, "id", "Z0000000-0000-0000-0000-00000000000Z")
 	assert.Validation(t, res).
-		Field("id", InvalidUUIDType)
+		Field("id", InvalidUUIDType())
 }
 
 func Test_Nested_Object(t *testing.T) {
@@ -543,14 +548,14 @@ func Test_Nested_Object(t *testing.T) {
 	_, res := testInput(o1, "id", 3)
 
 	assert.Validation(t, res).
-		Field("user.age", Required).
-		Field("user.name", Required)
+		Field("user.age", Required()).
+		Field("user.name", Required())
 
 	o2 := Object().Field("entry", o1)
 	_, res = testInput(o2, "id", 3)
 	assert.Validation(t, res).
-		Field("entry.user.age", Required).
-		Field("entry.user.name", Required)
+		Field("entry.user.age", Required()).
+		Field("entry.user.name", Required())
 
 	_, res = testInput(o2, "entry", typed.Typed{"user": typed.Typed{"age": 3000, "name": "Leto"}})
 	assert.Validation(t, res).FieldsHaveNoErrors("entry.user.age", "entry.user.name")
@@ -562,13 +567,15 @@ func Test_Array_Object(t *testing.T) {
 		Field("users", Array().Required().Validator(child))
 
 	_, res := testInput(o1)
-	assert.Validation(t, res).Field("users", Required)
+	assert.Validation(t, res).Field("users", Required())
 
 	_, res = testInput(o1, "users", 1)
-	assert.Validation(t, res).Field("users", InvalidArrayType)
+	assert.Validation(t, res).Field("users", InvalidArrayType())
 
-	_, res = testInput(o1, "users", []typed.Typed{typed.Typed{}})
-	assert.Validation(t, res).Field("users.0.name", Required)
+	_, res = testInput(o1, "users", []typed.Typed{typed.Typed{}, typed.Typed{}})
+	assert.Validation(t, res).
+		Field("users.0.name", Required()).
+		Field("users.1.name", Required())
 
 	_, res = testInput(o1, "users", []typed.Typed{typed.Typed{"name": "leto"}})
 	assert.Validation(t, res).FieldsHaveNoErrors("users.0.name")
@@ -578,7 +585,7 @@ func Test_Array_Object(t *testing.T) {
 		typed.Typed{"name": 3},
 	})
 	assert.Validation(t, res).
-		Field("users.1.name", InvalidStringType).
+		Field("users.1.name", InvalidStringType()).
 		FieldsHaveNoErrors("users.0.name")
 }
 
@@ -591,13 +598,13 @@ func Test_Array_MinAndMax(t *testing.T) {
 	o1 := Object().Field("users", Array().Min(2).Max(3).Required().Validator(child))
 
 	_, res := testInput(o1, "users", []typed.Typed{createItem()})
-	assert.Validation(t, res).Field("users", InvalidArrayMinLength, map[string]any{"min": 2})
+	assert.Validation(t, res).Field("users", InvalidArrayMinLength(2))
 
 	// 4 items, too many
 	_, res = testInput(o1, "users", []typed.Typed{
 		createItem(), createItem(), createItem(), createItem(),
 	})
-	assert.Validation(t, res).Field("users", InvalidArrayMaxLength, map[string]any{"max": 3})
+	assert.Validation(t, res).Field("users", InvalidArrayMaxLength(3))
 
 	// 2 items, good
 	_, res = testInput(o1, "users", []typed.Typed{
@@ -621,13 +628,13 @@ func Test_Array_Range(t *testing.T) {
 	o1 := Object().Field("users", Array().Range(2, 3).Required().Validator(child))
 
 	_, res := testInput(o1, "users", []typed.Typed{createItem()})
-	assert.Validation(t, res).Field("users", InvalidArrayRangeLength, map[string]any{"min": 2, "max": 3})
+	assert.Validation(t, res).Field("users", InvalidArrayRangeLength(2, 3))
 
 	// 4 items, too many
 	_, res = testInput(o1, "users", []typed.Typed{
 		createItem(), createItem(), createItem(), createItem(),
 	})
-	assert.Validation(t, res).Field("users", InvalidArrayRangeLength, map[string]any{"min": 2, "max": 3})
+	assert.Validation(t, res).Field("users", InvalidArrayRangeLength(2, 3))
 
 	// 2 items, good
 	_, res = testInput(o1, "users", []typed.Typed{
@@ -640,7 +647,6 @@ func Test_Array_Range(t *testing.T) {
 		createItem(), createItem(), createItem(),
 	})
 	assert.Validation(t, res).FieldsHaveNoErrors("users")
-
 }
 
 func Test_Any_Required(t *testing.T) {
@@ -651,7 +657,7 @@ func Test_Any_Required(t *testing.T) {
 	_, res := testInput(o)
 	assert.Validation(t, res).
 		FieldsHaveNoErrors("name").
-		Field("code", Required)
+		Field("code", Required())
 
 	_, res = testInput(o, "code", 1)
 	assert.Validation(t, res).
@@ -666,7 +672,7 @@ func Test_Any_Default(t *testing.T) {
 }
 
 func Test_Any_Func(t *testing.T) {
-	o := Object().Field("name", Any().Func(func(path []string, value any, object typed.Typed, input typed.Typed, res *Result) any {
+	o := Object().Field("name", Any().Func(func(field Field, value any, object typed.Typed, input typed.Typed, res *Result) any {
 		assert.Equal(t, value.(string), "one-one")
 		return 11
 	}))

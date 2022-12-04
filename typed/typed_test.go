@@ -78,7 +78,7 @@ func Test_Bool(t *testing.T) {
 }
 
 func Test_Int(t *testing.T) {
-	typed := New(build("port", 84, "string", "30", "i16", int16(1), "i32", int32(2), "i64", int64(3), "f64", float64(4), "number", json.Number("5"), "nope", true))
+	typed := New(build("port", 84, "string", "30", "i16", int16(1), "i32", int32(2), "i64", int64(3), "f64", float64(4), "number", json.Number("5"), "nope", true, "decimal", 3.1))
 	assert.Equal(t, typed.Int("port"), 84)
 	assert.Equal(t, typed.IntOr("port", 11), 84)
 	value, exists := typed.IntIf("port")
@@ -101,6 +101,10 @@ func Test_Int(t *testing.T) {
 	assert.Equal(t, value, 0)
 	assert.False(t, exists)
 
+	value, exists = typed.IntIf("decimal")
+	assert.Equal(t, value, 0)
+	assert.False(t, exists)
+
 	assert.Equal(t, typed.Int("i16"), 1)
 	assert.Equal(t, typed.Int("i32"), 2)
 	assert.Equal(t, typed.Int("i64"), 3)
@@ -114,7 +118,8 @@ func Test_Int(t *testing.T) {
 }
 
 func Test_Float(t *testing.T) {
-	typed := New(build("pi", 3.14, "string", "30.14", "nope", true))
+	typed := New(build("pi", 3.14, "string", "30.14", "nope", true, "int", 33))
+	assert.Equal(t, typed.Float("int"), 33)
 	assert.Equal(t, typed.Float("pi"), 3.14)
 	assert.Equal(t, typed.FloatOr("pi", 11.3), 3.14)
 	value, exists := typed.FloatIf("pi")

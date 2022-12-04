@@ -1,37 +1,9 @@
 package validation
 
-/*
-Technically a result can contain a list anything, so long as it
-can be serialized to JSON. In reality, we expect it to be a list
-of:
-  - Invalid,
-  - InvalidField, and/or
-  - InvalidIndexedField
-
-Invalid is a base and includes an integer code, an english description
-and arbitrary meta data (imagine a string with a min and max length,
-we'd expect our data to say the min and max).
-
-And InvalidField includes an Invalid and adds a "fields". This
-is the name of the field which is invalid. It's  a string array to support nested
-objects, e.g. ["name"] or ["user", "name"].
-
-Things go off the rails with InvalidIndexedField. This adds an "indexes" []int
-to an InvalidField and is meant to represent the index in an array where validation
-fails. The problem with indexes is that they're dynamic, and everything else
-in our validation is static. The ["user", "name"] field is created on startup
-and never changes. But with array indexes, if we did something like
-["user", 23, "name"], the `23` would only be known at runtime. This would require
-us to create a copy of fields on each error.
-
-Instead, we keep our fields static and define it as ["user", "#", "name"] and
-then add an indexes, which would be: [23]. This works for nested arrays too:
-	fields: ["entries", "#", "users", "#", "name"]
-	indexes: [2, 23]
-
-It's pretty far from great, but it's efficient and it's something that clients
-will be able to handle.
-*/
+import (
+	"strconv"
+	"strings"
+)
 
 type Result struct {
 	len          uint64
@@ -61,35 +33,37 @@ func (r Result) Len() uint64 {
 	return r.len
 }
 
-func (r *Result) Invalid(meta Meta, data any) {
-	r.add(Invalid{
-		Data:  data,
-		Code:  meta.Code,
-		Error: meta.Error,
-	})
-}
+func (r *Result) AddInvalidField(field Field, invalid Invalid) {
+	fieldName := field.Flat
 
-func (r *Result) InvalidField(fields []string, meta Meta, data any) {
-	r.addField(InvalidField{
-		Fields: fields,
-		Invalid: Invalid{
-			Data:  data,
-			Code:  meta.Code,
-			Error: meta.Error,
-		},
-	})
-}
+	if r.arrayCount != -1 {
+		// We're inside of an array, we need to create field name dynamically
+		// TODO: optimize this code
+		var w strings.Builder
 
-func (r *Result) addField(err InvalidField) {
-	arrayCount := r.arrayCount
-	if arrayCount == -1 {
-		r.add(err)
-	} else {
-		r.add(InvalidIndexedField{
-			InvalidField: err,
-			Indexes:      r.arrayIndexes[:arrayCount+1],
-		})
+		// Over allocate a little so that we likely won't have to allocate + copy.
+		w.Grow(len(field.Name) + 20)
+
+		indexIndex := 0
+		indexes := r.arrayIndexes
+		for _, part := range field.Path {
+			w.WriteByte('.')
+			if part == "" {
+				w.WriteString(strconv.Itoa(indexes[indexIndex]))
+				indexIndex += 1
+			} else {
+				w.WriteString(part)
+			}
+		}
+
+		// [1:] to strip out the leader .
+		fieldName = w.String()[1:]
 	}
+
+	r.add(InvalidField{
+		Field:   fieldName,
+		Invalid: invalid,
+	})
 }
 
 func (r *Result) add(error any) {

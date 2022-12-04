@@ -7,65 +7,65 @@ import (
 )
 
 type AnyRule interface {
-	fields(fields []string) AnyRule
-	Validate(fields []string, value any, object typed.Typed, input typed.Typed, res *Result) any
+	clone() AnyRule
+	Validate(field Field, value any, object typed.Typed, input typed.Typed, res *Result) any
 }
 
 func Any() *AnyValidator {
-	return &AnyValidator{}
+	return &AnyValidator{
+		errReq: Required(),
+	}
 }
 
 type AnyValidator struct {
-	field       string
-	fields      []string
-	dflt        any
-	required    bool
-	rules       []AnyRule
-	errRequired InvalidField
+	field    Field
+	dflt     any
+	required bool
+	rules    []AnyRule
+	errReq   Invalid
 }
 
 func (v *AnyValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
-	field := v.field
-	if value := args.Peek(field); value != nil {
-		t[field] = utils.B2S(value)
+	fieldName := v.field.Name
+	if value := args.Peek(fieldName); value != nil {
+		t[fieldName] = utils.B2S(value)
 	}
 }
 
 func (v *AnyValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
 	field := v.field
-	value, exists := object[field]
+	fieldName := field.Name
 
+	value, exists := object[fieldName]
 	if !exists {
 		if v.required {
-			res.addField(v.errRequired)
+			res.AddInvalidField(field, v.errReq)
 		} else if dflt := v.dflt; dflt != 0 {
-			object[field] = dflt
+			object[fieldName] = dflt
 		}
 		return
 	}
 
-	fields := v.fields
 	for _, rule := range v.rules {
-		value = rule.Validate(fields, value, object, input, res)
+		value = rule.Validate(field, value, object, input, res)
 	}
-	object[field] = value
+	object[fieldName] = value
 }
 
-func (v *AnyValidator) addField(field string) InputValidator {
-	field, fields := expandFields(field, v.fields, v.field)
+func (v *AnyValidator) addField(fieldName string) InputValidator {
+	field := v.field.add(fieldName)
 
 	rules := make([]AnyRule, len(v.rules))
 	for i, rule := range v.rules {
-		rules[i] = rule.fields(fields)
+		rules[i] = rule.clone()
 	}
 
 	return &AnyValidator{
-		field:       field,
-		fields:      fields,
-		dflt:        v.dflt,
-		required:    v.required,
-		rules:       rules,
-		errRequired: invalidField(fields, Required, nil),
+		field:    field,
+		dflt:     v.dflt,
+		required: v.required,
+		rules:    rules,
+		errReq:   v.errReq,
 	}
 }
 
@@ -79,19 +79,19 @@ func (v *AnyValidator) Default(value any) *AnyValidator {
 	return v
 }
 
-func (v *AnyValidator) Func(fn func(fields []string, value any, object typed.Typed, input typed.Typed, res *Result) any) *AnyValidator {
+func (v *AnyValidator) Func(fn func(field Field, value any, object typed.Typed, input typed.Typed, res *Result) any) *AnyValidator {
 	v.rules = append(v.rules, AnyFunc{fn: fn})
 	return v
 }
 
 type AnyFunc struct {
-	fn func([]string, any, typed.Typed, typed.Typed, *Result) any
+	fn func(Field, any, typed.Typed, typed.Typed, *Result) any
 }
 
-func (v AnyFunc) Validate(fields []string, value any, object typed.Typed, input typed.Typed, res *Result) any {
-	return v.fn(fields, value, object, input, res)
+func (v AnyFunc) Validate(field Field, value any, object typed.Typed, input typed.Typed, res *Result) any {
+	return v.fn(field, value, object, input, res)
 }
 
-func (r AnyFunc) fields(fields []string) AnyRule {
+func (r AnyFunc) clone() AnyRule {
 	return r
 }

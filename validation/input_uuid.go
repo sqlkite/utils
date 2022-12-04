@@ -7,55 +7,57 @@ import (
 )
 
 func UUID() *UUIDValidator {
-	return &UUIDValidator{}
+	return &UUIDValidator{
+		errReq:  Required(),
+		errType: InvalidUUIDType(),
+	}
 }
 
 type UUIDValidator struct {
-	field       string
-	fields      []string
-	dflt        string
-	required    bool
-	errType     InvalidField
-	errRequired InvalidField
+	field    Field
+	dflt     string
+	required bool
+	errReq   Invalid
+	errType  Invalid
 }
 
 func (v *UUIDValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
-	field := v.field
-	if value := args.Peek(field); value != nil {
-		t[field] = string(value)
+	fieldName := v.field.Name
+	if value := args.Peek(fieldName); value != nil {
+		t[fieldName] = string(value)
 	}
 }
 
 func (v *UUIDValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
 	field := v.field
-	value, exists := object.StringIf(field)
+	fieldName := field.Name
 
+	value, exists := object.StringIf(fieldName)
 	if !exists {
-		if _, exists = object[field]; !exists && v.required {
-			res.addField(v.errRequired)
+		if _, exists = object[fieldName]; !exists && v.required {
+			res.AddInvalidField(field, v.errReq)
 		} else if exists {
-			res.addField(v.errType)
+			res.AddInvalidField(field, v.errType)
 		}
 		if dflt := v.dflt; dflt != "" {
-			object[field] = dflt
+			object[fieldName] = dflt
 		}
 		return
 	}
 
 	if !uuid.IsValid(value) {
-		res.addField(v.errType)
+		res.AddInvalidField(field, v.errType)
 	}
 }
 
-func (v *UUIDValidator) addField(field string) InputValidator {
-	field, fields := expandFields(field, v.fields, v.field)
+func (v *UUIDValidator) addField(fieldName string) InputValidator {
+	field := v.field.add(fieldName)
 	return &UUIDValidator{
-		field:       field,
-		fields:      fields,
-		dflt:        v.dflt,
-		required:    v.required,
-		errType:     invalidField(fields, InvalidUUIDType, nil),
-		errRequired: invalidField(fields, Required, nil),
+		field:    field,
+		dflt:     v.dflt,
+		required: v.required,
+		errReq:   v.errReq,
+		errType:  v.errType,
 	}
 }
 

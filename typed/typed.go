@@ -163,7 +163,11 @@ func (t Typed) IntIf(key string) (int, bool) {
 	case int64:
 		return int(t), true
 	case float64:
-		return int(t), true
+		nt := int(t)
+		if t == float64(nt) {
+			return nt, true
+		}
+		return 0, false
 	case string:
 		i, err := strconv.Atoi(t)
 		return i, err == nil
@@ -203,6 +207,8 @@ func (t Typed) FloatIf(key string) (float64, bool) {
 	switch t := value.(type) {
 	case float64:
 		return t, true
+	case int:
+		return float64(t), true
 	case string:
 		f, err := strconv.ParseFloat(t, 10)
 		return f, err == nil

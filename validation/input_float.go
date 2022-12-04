@@ -9,75 +9,76 @@ import (
 )
 
 type FloatRule interface {
-	fields(fields []string) FloatRule
-	Validate(fields []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64
+	clone() FloatRule
+	Validate(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64
 }
 
 func Float() *FloatValidator {
-	return &FloatValidator{}
+	return &FloatValidator{
+		errReq:  Required(),
+		errType: InvalidFloatType(),
+	}
 }
 
 type FloatValidator struct {
-	field       string
-	fields      []string
-	dflt        float64
-	required    bool
-	rules       []FloatRule
-	errType     InvalidField
-	errRequired InvalidField
+	field    Field
+	dflt     float64
+	required bool
+	rules    []FloatRule
+	errReq   Invalid
+	errType  Invalid
 }
 
 func (v *FloatValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
-	field := v.field
-	if value := args.Peek(field); value != nil {
+	fieldName := v.field.Name
+	if value := args.Peek(fieldName); value != nil {
 		if n, err := strconv.ParseFloat(utils.B2S(value), 64); err == nil {
-			t[field] = n
+			t[fieldName] = n
 		} else {
-			t[field] = value
+			t[fieldName] = value
 		}
 	}
 }
 
 func (v *FloatValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
 	field := v.field
-	value, exists := object.FloatIf(field)
+	fieldName := field.Name
+	value, exists := object.FloatIf(fieldName)
 
 	if !exists {
-		if _, exists := object[field]; !exists {
+		if _, exists := object[fieldName]; !exists {
 			if v.required {
-				res.addField(v.errRequired)
+				res.AddInvalidField(field, v.errReq)
 			} else if dflt := v.dflt; dflt != 0 {
-				object[field] = dflt
+				object[fieldName] = dflt
 			}
 			return
 		}
-		res.addField(v.errType)
+		res.AddInvalidField(field, v.errType)
 		return
 	}
 
-	fields := v.fields
 	for _, rule := range v.rules {
-		value = rule.Validate(fields, value, object, input, res)
+		value = rule.Validate(field, value, object, input, res)
 	}
-	object[field] = value
+	object[fieldName] = value
 }
 
-func (v *FloatValidator) addField(field string) InputValidator {
-	field, fields := expandFields(field, v.fields, v.field)
+func (v *FloatValidator) addField(fieldName string) InputValidator {
+	field := v.field.add(fieldName)
 
 	rules := make([]FloatRule, len(v.rules))
 	for i, rule := range v.rules {
-		rules[i] = rule.fields(fields)
+		rules[i] = rule.clone()
 	}
 
 	return &FloatValidator{
-		field:       field,
-		fields:      fields,
-		dflt:        v.dflt,
-		required:    v.required,
-		rules:       rules,
-		errType:     invalidField(fields, InvalidFloatType, nil),
-		errRequired: invalidField(fields, Required, nil),
+		field:    field,
+		dflt:     v.dflt,
+		required: v.required,
+		rules:    rules,
+		errReq:   v.errReq,
+		errType:  v.errType,
 	}
 }
 
@@ -92,12 +93,18 @@ func (v *FloatValidator) Default(value float64) *FloatValidator {
 }
 
 func (v *FloatValidator) Min(min float64) *FloatValidator {
-	v.rules = append(v.rules, FloatMin{min: min})
+	v.rules = append(v.rules, FloatMin{
+		min: min,
+		err: InvalidFloatMin(min),
+	})
 	return v
 }
 
 func (v *FloatValidator) Max(max float64) *FloatValidator {
-	v.rules = append(v.rules, FloatMax{max: max})
+	v.rules = append(v.rules, FloatMax{
+		max: max,
+		err: InvalidFloatMax(max),
+	})
 	return v
 }
 
@@ -105,86 +112,83 @@ func (v *FloatValidator) Range(min float64, max float64) *FloatValidator {
 	v.rules = append(v.rules, FloatRange{
 		min: min,
 		max: max,
+		err: InvalidFloatRange(min, max),
 	})
 	return v
 }
 
-func (v *FloatValidator) Func(fn func(fields []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64) *FloatValidator {
+func (v *FloatValidator) Func(fn func(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64) *FloatValidator {
 	v.rules = append(v.rules, FloatFunc{fn: fn})
 	return v
 }
 
 type FloatMin struct {
 	min float64
-	err InvalidField
+	err Invalid
 }
 
-func (r FloatMin) Validate(fields []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
+func (r FloatMin) Validate(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
 	if value < r.min {
-		res.addField(r.err)
+		res.AddInvalidField(field, r.err)
 	}
 	return value
 }
 
-func (r FloatMin) fields(fields []string) FloatRule {
-	min := r.min
+func (r FloatMin) clone() FloatRule {
 	return FloatMin{
-		min: min,
-		err: invalidField(fields, InvalidFloatMin, Min(min), min),
+		min: r.min,
+		err: r.err,
 	}
 }
 
 type FloatMax struct {
 	max float64
-	err InvalidField
+	err Invalid
 }
 
-func (r FloatMax) Validate(fields []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
+func (r FloatMax) Validate(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
 	if value > r.max {
-		res.addField(r.err)
+		res.AddInvalidField(field, r.err)
 	}
 	return value
 }
 
-func (r FloatMax) fields(fields []string) FloatRule {
-	max := r.max
+func (r FloatMax) clone() FloatRule {
 	return FloatMax{
-		max: max,
-		err: invalidField(fields, InvalidFloatMax, Max(max), max),
+		max: r.max,
+		err: r.err,
 	}
 }
 
 type FloatRange struct {
 	min float64
 	max float64
-	err InvalidField
+	err Invalid
 }
 
-func (r FloatRange) Validate(fields []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
+func (r FloatRange) Validate(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
 	if value < r.min || value > r.max {
-		res.addField(r.err)
+		res.AddInvalidField(field, r.err)
 	}
 	return value
 }
 
-func (r FloatRange) fields(fields []string) FloatRule {
-	min := r.min
-	max := r.max
+func (r FloatRange) clone() FloatRule {
 	return FloatRange{
-		min: min,
-		max: max,
-		err: invalidField(fields, InvalidFloatRange, Range(min, max), min, max),
+		min: r.min,
+		max: r.max,
+		err: r.err,
 	}
 }
 
 type FloatFunc struct {
-	fn func([]string, float64, typed.Typed, typed.Typed, *Result) float64
+	fn func(Field, float64, typed.Typed, typed.Typed, *Result) float64
 }
 
-func (v FloatFunc) Validate(fields []string, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
-	return v.fn(fields, value, object, input, res)
+func (v FloatFunc) Validate(field Field, value float64, object typed.Typed, input typed.Typed, res *Result) float64 {
+	return v.fn(field, value, object, input, res)
 }
 
-func (r FloatFunc) fields(fields []string) FloatRule {
+func (r FloatFunc) clone() FloatRule {
 	return r
 }

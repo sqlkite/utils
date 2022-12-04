@@ -6,79 +6,80 @@ import (
 )
 
 type BoolRule interface {
-	fields(fields []string) BoolRule
-	Validate(fields []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool
+	clone() BoolRule
+	Validate(field Field, value bool, object typed.Typed, input typed.Typed, res *Result) bool
 }
 
 func Bool() *BoolValidator {
-	return &BoolValidator{}
+	return &BoolValidator{
+		errReq:  Required(),
+		errType: InvalidBoolType(),
+	}
 }
 
 type BoolValidator struct {
-	fields      []string
-	field       string
-	dflt        bool
-	required    bool
-	rules       []BoolRule
-	errType     InvalidField
-	errRequired InvalidField
+	field    Field
+	dflt     bool
+	required bool
+	rules    []BoolRule
+	errReq   Invalid
+	errType  Invalid
 }
 
 func (v *BoolValidator) argsToTyped(args *fasthttp.Args, t typed.Typed) {
-	field := v.field
-	if value := args.Peek(field); value != nil {
+	fieldName := v.field.Name
+	if value := args.Peek(fieldName); value != nil {
 		// switch string([]byte) is optimized by Go
 		switch string(value) {
 		case "true", "TRUE", "True":
-			t[field] = true
+			t[fieldName] = true
 		case "false", "FALSE", "False":
-			t[field] = false
+			t[fieldName] = false
 		default:
-			t[field] = value
+			t[fieldName] = value
 		}
 	}
 }
 
 func (v *BoolValidator) validate(object typed.Typed, input typed.Typed, res *Result) {
 	field := v.field
-	value, exists := object.BoolIf(field)
+	fieldName := field.Name
 
+	value, exists := object.BoolIf(fieldName)
 	if !exists {
-		if _, exists := object[field]; !exists {
+		if _, exists := object[fieldName]; !exists {
 			if v.required {
-				res.addField(v.errRequired)
+				res.AddInvalidField(field, v.errReq)
 			} else if dflt := v.dflt; dflt != false {
-				object[field] = dflt
+				object[fieldName] = dflt
 			}
 			return
 		}
-		res.addField(v.errType)
+		res.AddInvalidField(field, v.errType)
 		return
 	}
 
-	fields := v.fields
 	for _, rule := range v.rules {
-		value = rule.Validate(fields, value, object, input, res)
+		value = rule.Validate(field, value, object, input, res)
 	}
-	object[field] = value
+	object[fieldName] = value
 }
 
-func (v *BoolValidator) addField(field string) InputValidator {
-	field, fields := expandFields(field, v.fields, v.field)
+func (v *BoolValidator) addField(fieldName string) InputValidator {
+	field := v.field.add(fieldName)
 
 	rules := make([]BoolRule, len(v.rules))
 	for i, rule := range v.rules {
-		rules[i] = rule.fields(fields)
+		rules[i] = rule.clone()
 	}
 
 	return &BoolValidator{
-		field:       field,
-		fields:      fields,
-		dflt:        v.dflt,
-		required:    v.required,
-		rules:       rules,
-		errType:     invalidField(fields, InvalidBoolType, nil),
-		errRequired: invalidField(fields, Required, nil),
+		field:    field,
+		dflt:     v.dflt,
+		required: v.required,
+		rules:    rules,
+		errReq:   v.errReq,
+		errType:  v.errType,
 	}
 }
 
@@ -92,19 +93,19 @@ func (v *BoolValidator) Default(value bool) *BoolValidator {
 	return v
 }
 
-func (v *BoolValidator) Func(fn func(fields []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool) *BoolValidator {
+func (v *BoolValidator) Func(fn func(field Field, value bool, object typed.Typed, input typed.Typed, res *Result) bool) *BoolValidator {
 	v.rules = append(v.rules, BoolFunc{fn})
 	return v
 }
 
 type BoolFunc struct {
-	fn func([]string, bool, typed.Typed, typed.Typed, *Result) bool
+	fn func(Field, bool, typed.Typed, typed.Typed, *Result) bool
 }
 
-func (v BoolFunc) Validate(fields []string, value bool, object typed.Typed, input typed.Typed, res *Result) bool {
-	return v.fn(fields, value, object, input, res)
+func (v BoolFunc) Validate(field Field, value bool, object typed.Typed, input typed.Typed, res *Result) bool {
+	return v.fn(field, value, object, input, res)
 }
 
-func (r BoolFunc) fields(fields []string) BoolRule {
+func (r BoolFunc) clone() BoolRule {
 	return r
 }
